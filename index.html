@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedQuiz HNU - Medical Quiz Platform</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+        }
+
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: transform 0.3s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: #eee;
+            color: #333;
+        }
+
+        .folders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .folder-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .folder-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .folder-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .quiz-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quiz-card:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-right: 5px solid #667eea;
+        }
+
+        .option {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .option.correct {
+            border-color: #4caf50;
+            background: #e8f5e9;
+        }
+
+        .option.wrong {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .result-container {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .result-score {
+            font-size: 4em;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .breadcrumb {
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            font-size: 1.2em;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .timer.warning {
+            color: #f44336;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .dark-mode .header,
+        .dark-mode .section,
+        .dark-mode .breadcrumb {
+            background: #0f3460;
+            color: white;
+        }
+
+        .dark-mode .folder-card,
+        .dark-mode .quiz-card {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            font-size: 1em;
+        }
+
+        .favorite-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 2000;
+            animation: slideDown 0.5s;
+        }
+
+        .notification .close {
+            margin-left: 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); }
+            to { transform: translateX(-50%) translateY(0); }
+        }
+
+        .mistake-review {
+            background: #fff3e0;
+            border-left: 5px solid #ff9800;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="section">
+            <div class="header">
+                <h1>🩺 MedQuiz HNU</h1>
+                <p>Medical Quiz Platform</p>
+            </div>
+            
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showLoginTab('login')">Login</button>
+                <button class="nav-tab" onclick="showLoginTab('signup')">Sign Up</button>
+            </div>
+
+            <div id="login-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="login-username" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label>PIN Code (4 digits)</label>
+                    <input type="password" id="login-pin" placeholder="Enter PIN" maxlength="4">
+                </div>
+                <button class="btn" onclick="login()">Login</button>
+            </div>
+
+            <div id="signup-form" class="hidden">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="signup-username" placeholder="Choose username">
+                </div>
+                <div class="form-group">
+                    <label>PIN Code (4 digits)</label>
+                    <input type="password" id="signup-pin" placeholder="Choose PIN" maxlength="4">
+                </div>
+                <div class="form-group">
+                    <label>Confirm PIN</label>
+                    <input type="password" id="signup-pin-confirm" placeholder="Confirm PIN" maxlength="4">
+                </div>
+                <button class="btn" onclick="signup()">Sign Up</button>
+            </div>
+        </div>
+
+        <!-- Main App (Hidden initially) -->
+        <div id="main-app" class="hidden">
+            <div class="header">
+                <h1>🩺 MedQuiz HNU</h1>
+                <p>Welcome, <span id="user-name"></span>!</p>
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-secondary" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                    <a href="admin.html" class="btn" style="text-decoration: none;">⚙️ Admin</a>
+                </div>
+            </div>
+
+            <div class="breadcrumb" id="breadcrumb">
+                <a onclick="goHome()">🏠 Home</a>
+            </div>
+
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showMainTab('browse')">📚 Browse</button>
+                <button class="nav-tab" onclick="showMainTab('favorites')">⭐ Favorites</button>
+                <button class="nav-tab" onclick="showMainTab('mistakes')">❌ My Mistakes</button>
+                <button class="nav-tab" onclick="showMainTab('history')">📊 History</button>
+            </div>
+
+            <div id="browse-tab" class="section">
+                <input type="text" class="search-box" id="search-box" placeholder="🔍 Search quizzes..." onkeyup="searchQuizzes()">
+                <div id="browse-content"></div>
+            </div>
+
+            <div id="favorites-tab" class="section hidden">
+                <h2>⭐ My Favorites</h2>
+                <div id="favorites-content"></div>
+            </div>
+
+            <div id="mistakes-tab" class="section hidden">
+                <h2>❌ My Mistakes</h2>
+                <div id="mistakes-content"></div>
+            </div>
+
+            <div id="history-tab" class="section hidden">
+                <h2>📊 My History</h2>
+                <div id="history-content"></div>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden">
+            <div class="timer" id="timer">⏱️ 30:00</div>
+            <div class="section">
+                <h2 id="quiz-title"></h2>
+                <div id="questions-container"></div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn" onclick="finishQuiz()">Finish Quiz</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden">
+            <div class="section result-container">
+                <h2>🎉 Quiz Completed!</h2>
+                <div class="result-score" id="final-score"></div>
+                <p id="result-message"></p>
+                
+                <div id="mistakes-review" class="hidden" style="margin: 30px 0; text-align: left;">
+                    <h3>❌ Questions You Got Wrong:</h3>
+                    <div id="mistakes-list"></div>
+                </div>
+                
+                <div style="margin-top: 30px;">
+                    <button class="btn" onclick="reviewMistakes()">Review Mistakes</button>
+                    <button class="btn btn-secondary" onclick="goHome()">Back to Home</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyB001YxSS9iQ6PArK1VHf0lIlpLyP1Rqew",
+            authDomain: "medquiz-hnu.firebaseapp.com",
+            projectId: "medquiz-hnu",
+            storageBucket: "medquiz-hnu.firebasestorage.app",
+            messagingSenderId: "862221476635",
+            appId: "1:862221476635:web:369ca0e1f3b22b3eac29be",
+            measurementId: "G-4T9XPB89N7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentUser = null;
+        let currentPath = [];
+        let currentQuestions = [];
+        let userAnswers = {};
+        let correctCount = 0;
+        let quizMistakes = [];
+        let timerInterval;
+        let timeRemaining = 1800; // 30 minutes
+
+        // Check for existing session
+        window.onload = function() {
+            const savedUser = localStorage.getItem('medquiz_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showMainApp();
+            }
+            checkNotifications();
+        };
+
+        // Login/Signup Tabs
+        function showLoginTab(tab) {
+            document.querySelectorAll('#login-screen .nav-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('signup-form').classList.add('hidden');
+            } else {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('signup-form').classList.remove('hidden');
+            }
+        }
+
+        // Signup
+        function signup() {
+            const username = document.getElementById('signup-username').value.trim();
+            const pin = document.getElementById('signup-pin').value;
+            const pinConfirm = document.getElementById('signup-pin-confirm').value;
+
+            if (!username || pin.length !== 4) {
+                alert('Please enter username and 4-digit PIN');
+                return;
+            }
+
+            if (pin !== pinConfirm) {
+                alert('PIN codes do not match');
+                return;
+            }
+
+            const userId = username + '_' + pin;
+
+            db.collection('users').doc(userId).get().then(doc => {
+                if (doc.exists) {
+                    alert('Username already taken. Please choose another.');
+                } else {
+                    db.collection('users').doc(userId).set({
+                        username: username,
+                        pin: pin,
+                        createdAt: new Date(),
+                        favorites: [],
+                        history: []
+                    }).then(() => {
+                        alert('Account created! Please login.');
+                        showLoginTab('login');
+                        document.querySelector('#login-screen .nav-tab').click();
+                    });
+                }
+            });
+        }
+
+        // Login
+        function login() {
+            const username = document.getElementById('login-username').value.trim();
+            const pin = document.getElementById('login-pin').value;
+
+            if (!username || pin.length !== 4) {
+                alert('Please enter username and PIN');
+                return;
+            }
+
+            const userId = username + '_' + pin;
+
+            db.collection('users').doc(userId).get().then(doc => {
+                if (doc.exists) {
+                    currentUser = { id: userId, ...doc.data() };
+                    localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+                    showMainApp();
+                } else {
+                    alert('Invalid username or PIN');
+                }
+            });
+        }
+
+        // Logout
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('medquiz_user');
+            location.reload();
+        }
+
+        // Show Main App
+        function showMainApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('user-name').textContent = currentUser.username;
+            loadHome();
+        }
+
+        // Main Tabs
+        function showMainTab(tab) {
+            document.querySelectorAll('#main-app .nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#browse-tab, #favorites-tab, #mistakes-tab, #history-tab').forEach(t => t.classList.add('hidden'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.remove('hidden');
+
+            if (tab === 'favorites') loadFavorites();
+            if (tab === 'mistakes') loadMistakes();
+            if (tab === 'history') loadHistory();
+        }
+
+        // Browse Content
+        function loadHome() {
+            currentPath = [];
+            updateBreadcrumb();
+            
+            db.collection('folders').where('parentId', '==', null).get().then(snapshot => {
+                let html = '<div class="folders-grid">';
+                
+                if (snapshot.empty) {
+                    html += '<p>No content available yet.</p>';
+                } else {
+                    snapshot.forEach(doc => {
+                        const folder = doc.data();
+                        html += `
+                            <div class="folder-card" onclick="openFolder('${doc.id}', '${folder.name}')">
+                                <div class="folder-icon">📁</div>
+                                <div class="folder-name">${folder.name}</div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += '</div>';
+                document.getElementById('browse-content').innerHTML = html;
+            });
+        }
+
+        function openFolder(folderId, folderName) {
+            currentPath.push({ id: folderId, name: folderName, type: 'folder' });
+            loadCurrentFolder();
+        }
+
+        function loadCurrentFolder() {
+            updateBreadcrumb();
+            const current = currentPath[currentPath.length - 1];
+            
+            db.collection('folders').where('parentId', '==', current.id).get().then(foldersSnap => {
+                db.collection('quizzes').where('folderId', '==', current.id).get().then(quizzesSnap => {
+                    let html = '<div class="folders-grid">';
+                    
+                    if (!foldersSnap.empty) {
+                        foldersSnap.forEach(doc => {
+                            const folder = doc.data();
+                            html += `
+                                <div class="folder-card" onclick="openFolder('${doc.id}', '${folder.name}')">
+                                    <div class="folder-icon">📁</div>
+                                    <div class="folder-name">${folder.name}</div>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    if (!quizzesSnap.empty) {
+                        quizzesSnap.forEach(doc => {
+                            const quiz = doc.data();
+                            const isFav = currentUser.favorites && currentUser.favorites.includes(doc.id);
+                            html += `
+                                <div class="quiz-card" style="position: relative;" onclick="startQuiz('${doc.id}', '${quiz.title}')">
+                                    <button class="favorite-btn" onclick="event.stopPropagation(); toggleFavorite('${doc.id}')">
+                                        ${isFav ? '⭐' : '☆'}
+                                    </button>
+                                    <h3>📝 ${quiz.title}</h3>
+                                    <p>${quiz.questionCount || 0} questions</p>
+                                    <button class="btn" style="margin-top: 15px;">Start Quiz</button>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    html += '</div>';
+                    document.getElementById('browse-content').innerHTML = html;
+                });
+            });
+        }
+
+        function updateBreadcrumb() {
+            const breadcrumb = document.getElementById('breadcrumb');
+            let html = '<a onclick="goHome()">🏠 Home</a>';
+            
+            currentPath.forEach((item, index) => {
+                html += ' > ';
+                if (index === currentPath.length - 1) {
+                    html += `<strong>${item.name}</strong>`;
+                } else {
+                    html += `<a onclick="navigateTo(${index})">${item.name}</a>`;
+                }
+            });
+            
+            breadcrumb.innerHTML = html;
+        }
+
+        function navigateTo(index) {
+            currentPath = currentPath.slice(0, index + 1);
+            if (currentPath[index].type === 'quiz') {
+                currentPath.pop();
+            }
+            loadCurrentFolder();
+        }
+
+        function goHome() {
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            loadHome();
+        }
+
+        // Search
+        function searchQuizzes() {
+            const query = document.getElementById('search-box').value.toLowerCase();
+            if (!query) {
+                loadCurrentFolder();
+                return;
+            }
+            
+            db.collection('quizzes').get().then(snapshot => {
+                let html = '<div class="folders-grid">';
+                snapshot.forEach(doc => {
+                    const quiz = doc.data();
+                    if (quiz.title.toLowerCase().includes(query)) {
+                        html += `
+                            <div class="quiz-card" onclick="startQuiz('${doc.id}', '${quiz.title}')">
+                                <h3>📝 ${quiz.title}</h3>
+                                <p>${quiz.questionCount || 0} questions</p>
+                            </div>
+                        `;
+                    }
+                });
+                html += '</div>';
+                document.getElementById('browse-content').innerHTML = html;
+            });
+        }
+
+        // Favorites
+        function toggleFavorite(quizId) {
+            const favorites = currentUser.favorites || [];
+            const index = favorites.indexOf(quizId);
+            
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(quizId);
+            }
+            
+            currentUser.favorites = favorites;
+            localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+            
+            db.collection('users').doc(currentUser.id).update({ favorites });
+            loadCurrentFolder();
+        }
+
+        function loadFavorites() {
+            const favorites = currentUser.favorites || [];
+            if (favorites.length === 0) {
+                document.getElementById('favorites-content').innerHTML = '<p>No favorites yet.</p>';
+                return;
+            }
+            
+            let html = '<div class="folders-grid">';
+            favorites.forEach(quizId => {
+                db.collection('quizzes').doc(quizId).get().then(doc => {
+                    if (doc.exists) {
+                        const quiz = doc.data();
+                        html += `
+                            <div class="quiz-card" onclick="startQuiz('${doc.id}', '${quiz.title}')">
+                                <h3>📝 ${quiz.title}</h3>
+                                <p>${quiz.questionCount || 0} questions</p>
+                            </div>
+                        `;
+                        document.getElementById('favorites-content').innerHTML = html + '</div>';
+                    }
+                });
+            });
+        }
+
+        // Quiz
+        function startQuiz(quizId, title) {
+            currentPath.push({ id: quizId, name: title, type: 'quiz' });
+            
+            db.collection('quizzes').doc(quizId).collection('questions').orderBy('order').get().then(snapshot => {
+                currentQuestions = [];
+                snapshot.forEach(doc => {
+                    currentQuestions.push(doc.data());
+                });
+                
+                if (currentQuestions.length === 0) {
+                    alert('No questions in this quiz');
+                    return;
+                }
+                
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+                document.getElementById('quiz-title').textContent = title;
+                
+                startTimer();
+                renderQuiz();
+            });
+        }
+
+        function startTimer() {
+            timeRemaining = 1800; // 30 minutes
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 300) { // 5 minutes warning
+                    document.getElementById('timer').classList.add('warning');
+                }
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    finishQuiz();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            document.getElementById('timer').textContent = 
+                `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function renderQuiz() {
+            currentQuestions.sort(() => Math.random() - 0.5); // Randomize
+            
+            let html = '';
+            currentQuestions.forEach((q, index) => {
+                html += `
+                    <div class="question-card">
+                        <h3>Question ${index + 1}: ${q.question}</h3>
+                        <div id="options-${index}">
+                            ${q.options.map((opt, i) => `
+                                <div class="option" onclick="selectAnswer(${index}, ${i}, ${q.correctAnswer})">
+                                    ${String.fromCharCode(65 + i)}) ${opt}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div id="explanation-${index}" style="display: none; margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 10px;">
+                            <strong>Explanation:</strong> ${q.explanation || 'No explanation'}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('questions-container').innerHTML = html;
+            userAnswers = {};
+            correctCount = 0;
+            quizMistakes = [];
+        }
+
+        function selectAnswer(qIndex, selected, correct) {
+            if (userAnswers[qIndex] !== undefined) return;
+            userAnswers[qIndex] = selected;
+            
+            const options = document.getElementById(`options-${qIndex}`).children;
+            
+            if (selected === correct) {
+                options[selected].classList.add('correct');
+                correctCount++;
+            } else {
+                options[selected].classList.add('wrong');
+                options[correct].classList.add('correct');
+                
+                // Save mistake
+                quizMistakes.push({
+                    question: currentQuestions[qIndex].question,
+                    yourAnswer: currentQuestions[qIndex].options[selected],
+                    correctAnswer: currentQuestions[qIndex].options[correct],
+                    explanation: currentQuestions[qIndex].explanation
+                });
+            }
+            
+            document.getElementById(`explanation-${qIndex}`).style.display = 'block';
+        }
+
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            document.getElementById('timer').classList.remove('warning');
+            
+            const total = currentQuestions.length;
+            const percent = Math.round((correctCount / total) * 100);
+            
+            // Save to history
+            const history = currentUser.history || [];
+            history.push({
+                quizName: currentPath[currentPath.length - 1].name,
+                score: correctCount,
+                total: total,
+                percent: percent,
+                date: new Date(),
+                mistakes: quizMistakes
+            });
+            
+            currentUser.history = history;
+            localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+            db.collection('users').doc(currentUser.id).update({ history });
+            
+            // Show results
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('final-score').textContent = `${correctCount}/${total}`;
+            document.getElementById('result-message').textContent = 
+                percent >= 90 ? 'Excellent! 🌟' : 
+                percent >= 70 ? 'Very Good! 👍' : 
+                percent >= 50 ? 'Good effort 💪' : 'Keep practicing 📚';
+            
+            // Prepare mistakes review
+            if (quizMistakes.length > 0) {
+                document.getElementById('mistakes-review').classList.remove('hidden');
+                let mistakesHtml = '';
+                quizMistakes.forEach((m, i) => {
+                    mistakesHtml += `
+                        <div class="mistake-review">
+                            <strong>Q${i + 1}:</strong> ${m.question}<br>
+                            <span style="color: #f44336;">Your answer: ${m.yourAnswer}</span><br>
+                            <span style="color: #4caf50;">Correct: ${m.correctAnswer}</span><br>
+                            <small>${m.explanation}</small>
+                        </div>
+                    `;
+                });
+                document.getElementById('mistakes-list').innerHTML = mistakesHtml;
+            }
+        }
+
+        function reviewMistakes() {
+            document.getElementById('result-screen').classList.add('hidden');
+            showMainTab('mistakes');
+            document.getElementById('main-app').classList.remove('hidden');
+            loadMistakes();
+        }
+
+        // Load Mistakes
+        function loadMistakes() {
+            const history = currentUser.history || [];
+            let allMistakes = [];
+            
+            history.forEach(h => {
+                if (h.mistakes) {
+                    allMistakes = allMistakes.concat(h.mistakes);
+                }
+            });
+            
+            if (allMistakes.length === 0) {
+                document.getElementById('mistakes-content').innerHTML = '<p>No mistakes yet! Great job! 🎉</p>';
+                return;
+            }
+            
+            let html = '<h3>All Your Mistakes:</h3>';
+            allMistakes.forEach((m, i) => {
+                html += `
+                    <div class="mistake-review">
+                        <strong>Q${i + 1}:</strong> ${m.question}<br>
+                        <span style="color: #f44336;">Your answer: ${m.yourAnswer}</span><br>
+                        <span style="color: #4caf50;">Correct: ${m.correctAnswer}</span><br>
+                        <small>${m.explanation}</small>
+                    </div>
+                `;
+            });
+            document.getElementById('mistakes-content').innerHTML = html;
+        }
+
+        // Load History
+        function loadHistory() {
+            const history = currentUser.history || [];
+            
+            if (history.length === 0) {
+                document.getElementById('history-content').innerHTML = '<p>No history yet.</p>';
+                return;
+            }
+            
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<tr style="background: #667eea; color: white;"><th>Quiz</th><th>Score</th><th>Date</th></tr>';
+            
+            history.slice().reverse().forEach(h => {
+                const date = h.date.toDate ? h.date.toDate().toLocaleDateString() : new Date(h.date).toLocaleDateString();
+                html += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px;">${h.quizName}</td>
+                        <td style="padding: 10px;">${h.score}/${h.total} (${h.percent}%)</td>
+                        <td style="padding: 10px;">${date}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            document.getElementById('history-content').innerHTML = html;
+        }
+
+        // Dark Mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+
+        // Check for dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Notifications
+        function checkNotifications() {
+            db.collection('notifications').where('active', '==', true).get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const notif = doc.data();
+                    const now = new Date();
+                    const expiry = notif.expiry.toDate();
+                    
+                    if (now < expiry) {
+                        showNotification(notif.message, doc.id);
+                    }
+                });
+            });
+        }
+
+        function showNotification(message, id) {
+            const div = document.createElement('div');
+            div.className = 'notification';
+            div.innerHTML = `
+                ${message}
+                <span class="close" onclick="this.parentElement.remove()">×</span>
+            `;
+            document.body.appendChild(div);
+            
+            setTimeout(() => {
+                if (div.parentElement) div.remove();
+            }, 10000); // Auto remove after 10 seconds
+        }
+    </script>
+</body>
+</html>
