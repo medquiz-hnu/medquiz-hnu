@@ -4,10 +4,1150 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - MedQuiz HNU</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
+        // QUIZ NAME BUILDER FUNCTIONS
+        let quizOptions = {
+            modules: ['HPF', 'H', 'BSC', 'CGBP', 'ALF'],
+            subjects: ['Physiology', 'Histology', 'Anatomy', 'Embryology', 'Biochemistry', 'Pathology', 'Pharmacology', 'Microbiology']
+        };
+
+        // Load saved options from localStorage
+        function loadQuizOptions() {
+            const saved = localStorage.getItem('medquiz_options');
+            if (saved) {
+                quizOptions = JSON.parse(saved);
+            }
+            populateSelects();
+        }
+
+        // Save options to localStorage
+        function saveQuizOptions() {
+            localStorage.setItem('medquiz_options', JSON.stringify(quizOptions));
+        }
+
+        // Populate select dropdowns
+        function populateSelects() {
+            const moduleSelect = document.getElementById('quiz-module-select');
+            const subjectSelect = document.getElementById('quiz-subject-select');
+
+            if (moduleSelect) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        // Update quiz title based on selections
+        function updateQuizTitle() {
+            const moduleSelect = document.getElementById('quiz-module-select').value;
+            const moduleCustom = document.getElementById('quiz-module-custom').value.trim();
+            const subjectSelect = document.getElementById('quiz-subject-select').value;
+            const subjectCustom = document.getElementById('quiz-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('quiz-lecture-select').value;
+            const lectureCustom = document.getElementById('quiz-lecture-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || (lectureSelect ? 'Lecture ' + lectureSelect : '');
+
+            let title = '';
+            if (module) title += module;
+            if (subject) title += (title ? ' - ' : '') + subject;
+            if (lecture) title += (title ? ' - ' : '') + lecture;
+
+            document.getElementById('quiz-title').value = title;
+        }
+
+        // Show manage options modal
+        function showManageOptions() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+        }
+
+        // Render options in manage modal
+        function renderOptionsLists() {
+            const modulesDiv = document.getElementById('modules-list');
+            const subjectsDiv = document.getElementById('subjects-list');
+
+            if (modulesDiv) {
+                modulesDiv.innerHTML = quizOptions.modules.map((m, i) => 
+                    `<span style="background: #e3f2fd; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${m} <button onclick="removeOption('module', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+
+            if (subjectsDiv) {
+                subjectsDiv.innerHTML = quizOptions.subjects.map((s, i) => 
+                    `<span style="background: #e8f5e9; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${s} <button onclick="removeOption('subject', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+        }
+
+        // Add new option
+        function addOption(type) {
+            const input = document.getElementById('new-' + type);
+            const value = input.value.trim();
+
+            if (!value) return;
+
+            if (type === 'module') {
+                if (!quizOptions.modules.includes(value)) {
+                    quizOptions.modules.push(value);
+                }
+            } else if (type === 'subject') {
+                if (!quizOptions.subjects.includes(value)) {
+                    quizOptions.subjects.push(value);
+                }
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+            input.value = '';
+        }
+
+        // Remove option
+        function removeOption(type, index) {
+            if (type === 'module') {
+                quizOptions.modules.splice(index, 1);
+            } else if (type === 'subject') {
+                quizOptions.subjects.splice(index, 1);
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+        }
+
+        // Load options when page loads
+        window.addEventListener('load', function() {
+            loadQuizOptions();
+            populateFileSelects();
+        });
+
+        // MANAGE SHEETS FUNCTIONS
+        let questionSheets = [];
+
+        function loadSheets() {
+            const saved = localStorage.getItem('medquiz_sheets');
+            if (saved) {
+                questionSheets = JSON.parse(saved);
+            }
+        }
+
+        function saveSheets() {
+            localStorage.setItem('medquiz_sheets', JSON.stringify(questionSheets));
+        }
+
+        function showManageSheets() {
+            renderSheetsList();
+            openModal('manage-sheets-modal');
+        }
+
+        // Open Manage Options from File Modal
+        function showManageOptionsFromFile() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+
+            // Add listener to refresh file selects when closing manage options
+            const checkClosed = setInterval(() => {
+                if (document.getElementById('manage-options-modal').style.display !== 'flex') {
+                    clearInterval(checkClosed);
+                    populateFileSelects();
+                }
+            }, 500);
+        }
+
+        function saveSheet() {
+            const name = document.getElementById('sheet-name').value.trim();
+            const questions = document.getElementById('sheet-questions').value.trim();
+
+            if (!name) return alert('Please enter a sheet name');
+            if (!questions) return alert('Please enter questions');
+
+            const sheet = {
+                id: Date.now().toString(),
+                name: name,
+                questions: questions,
+                createdAt: new Date().toLocaleDateString()
+            };
+
+            questionSheets.push(sheet);
+            saveSheets();
+
+            // Clear inputs
+            document.getElementById('sheet-name').value = '';
+            document.getElementById('sheet-questions').value = '';
+
+            renderSheetsList();
+            alert('Sheet saved successfully!');
+        }
+
+        function renderSheetsList() {
+            const container = document.getElementById('sheets-list');
+            if (!container) return;
+
+            if (questionSheets.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No sheets saved yet</p>';
+                return;
+            }
+
+            container.innerHTML = questionSheets.map(sheet => `
+                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #333; font-size: 1.1em;">${sheet.name}</strong>
+                        <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                            📅 ${sheet.createdAt} | 📝 ${sheet.questions.split('Question:').length - 1} questions
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="useSheet('${sheet.id}')" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            ✓ Use
+                        </button>
+                        <button onclick="deleteSheet('${sheet.id}')" style="background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function useSheet(sheetId) {
+            const sheet = questionSheets.find(s => s.id === sheetId);
+            if (!sheet) return;
+
+            // Fill the quiz questions textarea
+            document.getElementById('quiz-text').value = sheet.questions;
+
+            // Close the modal
+            closeModal('manage-sheets-modal');
+
+            // If quiz modal is not open, open it
+            if (document.getElementById('quiz-modal').style.display !== 'flex') {
+                openModal('quiz-modal');
+            }
+
+            alert(`Sheet "${sheet.name}" loaded! Click "Parse" to preview questions.`);
+        }
+
+        function deleteSheet(sheetId) {
+            if (!confirm('Delete this sheet?')) return;
+
+            questionSheets = questionSheets.filter(s => s.id !== sheetId);
+            saveSheets();
+            renderSheetsList();
+        }
+
+        // Load sheets on page load
+        window.addEventListener('load', function() {
+            loadSheets();
+        });
+
+        // FILE NAME BUILDER FUNCTIONS
+        function populateFileSelects() {
+            const moduleSelect = document.getElementById('file-module-select');
+            const subjectSelect = document.getElementById('file-subject-select');
+
+            if (moduleSelect && quizOptions.modules) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect && quizOptions.subjects) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        function updateFileName() {
+            const moduleSelect = document.getElementById('file-module-select').value;
+            const moduleCustom = document.getElementById('file-module-custom').value.trim();
+            const subjectSelect = document.getElementById('file-subject-select').value;
+            const subjectCustom = document.getElementById('file-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('file-lecture-select').value;
+            const lectureCustom = document.getElementById('file-lecture-custom').value.trim();
+            const typeSelect = document.getElementById('file-type-select').value;
+            const typeCustom = document.getElementById('file-type-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || lectureSelect;
+            const type = typeCustom || typeSelect;
+
+            let name = '';
+            if (module) name += module;
+            if (subject) name += (name ? ' - ' : '') + subject;
+            if (lecture) name += (name ? ' - ' : '') + lecture;
+            if (type) name += (name ? ' - ' : '') + type;
+
+            document.getElementById('file-name').value = name;
+        }
+
+        // Original functions continue below...
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js">
+        // QUIZ NAME BUILDER FUNCTIONS
+        let quizOptions = {
+            modules: ['HPF', 'H', 'BSC', 'CGBP', 'ALF'],
+            subjects: ['Physiology', 'Histology', 'Anatomy', 'Embryology', 'Biochemistry', 'Pathology', 'Pharmacology', 'Microbiology']
+        };
+
+        // Load saved options from localStorage
+        function loadQuizOptions() {
+            const saved = localStorage.getItem('medquiz_options');
+            if (saved) {
+                quizOptions = JSON.parse(saved);
+            }
+            populateSelects();
+        }
+
+        // Save options to localStorage
+        function saveQuizOptions() {
+            localStorage.setItem('medquiz_options', JSON.stringify(quizOptions));
+        }
+
+        // Populate select dropdowns
+        function populateSelects() {
+            const moduleSelect = document.getElementById('quiz-module-select');
+            const subjectSelect = document.getElementById('quiz-subject-select');
+
+            if (moduleSelect) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        // Update quiz title based on selections
+        function updateQuizTitle() {
+            const moduleSelect = document.getElementById('quiz-module-select').value;
+            const moduleCustom = document.getElementById('quiz-module-custom').value.trim();
+            const subjectSelect = document.getElementById('quiz-subject-select').value;
+            const subjectCustom = document.getElementById('quiz-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('quiz-lecture-select').value;
+            const lectureCustom = document.getElementById('quiz-lecture-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || (lectureSelect ? 'Lecture ' + lectureSelect : '');
+
+            let title = '';
+            if (module) title += module;
+            if (subject) title += (title ? ' - ' : '') + subject;
+            if (lecture) title += (title ? ' - ' : '') + lecture;
+
+            document.getElementById('quiz-title').value = title;
+        }
+
+        // Show manage options modal
+        function showManageOptions() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+        }
+
+        // Render options in manage modal
+        function renderOptionsLists() {
+            const modulesDiv = document.getElementById('modules-list');
+            const subjectsDiv = document.getElementById('subjects-list');
+
+            if (modulesDiv) {
+                modulesDiv.innerHTML = quizOptions.modules.map((m, i) => 
+                    `<span style="background: #e3f2fd; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${m} <button onclick="removeOption('module', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+
+            if (subjectsDiv) {
+                subjectsDiv.innerHTML = quizOptions.subjects.map((s, i) => 
+                    `<span style="background: #e8f5e9; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${s} <button onclick="removeOption('subject', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+        }
+
+        // Add new option
+        function addOption(type) {
+            const input = document.getElementById('new-' + type);
+            const value = input.value.trim();
+
+            if (!value) return;
+
+            if (type === 'module') {
+                if (!quizOptions.modules.includes(value)) {
+                    quizOptions.modules.push(value);
+                }
+            } else if (type === 'subject') {
+                if (!quizOptions.subjects.includes(value)) {
+                    quizOptions.subjects.push(value);
+                }
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+            input.value = '';
+        }
+
+        // Remove option
+        function removeOption(type, index) {
+            if (type === 'module') {
+                quizOptions.modules.splice(index, 1);
+            } else if (type === 'subject') {
+                quizOptions.subjects.splice(index, 1);
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+        }
+
+        // Load options when page loads
+        window.addEventListener('load', function() {
+            loadQuizOptions();
+            populateFileSelects();
+        });
+
+        // MANAGE SHEETS FUNCTIONS
+        let questionSheets = [];
+
+        function loadSheets() {
+            const saved = localStorage.getItem('medquiz_sheets');
+            if (saved) {
+                questionSheets = JSON.parse(saved);
+            }
+        }
+
+        function saveSheets() {
+            localStorage.setItem('medquiz_sheets', JSON.stringify(questionSheets));
+        }
+
+        function showManageSheets() {
+            renderSheetsList();
+            openModal('manage-sheets-modal');
+        }
+
+        // Open Manage Options from File Modal
+        function showManageOptionsFromFile() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+
+            // Add listener to refresh file selects when closing manage options
+            const checkClosed = setInterval(() => {
+                if (document.getElementById('manage-options-modal').style.display !== 'flex') {
+                    clearInterval(checkClosed);
+                    populateFileSelects();
+                }
+            }, 500);
+        }
+
+        function saveSheet() {
+            const name = document.getElementById('sheet-name').value.trim();
+            const questions = document.getElementById('sheet-questions').value.trim();
+
+            if (!name) return alert('Please enter a sheet name');
+            if (!questions) return alert('Please enter questions');
+
+            const sheet = {
+                id: Date.now().toString(),
+                name: name,
+                questions: questions,
+                createdAt: new Date().toLocaleDateString()
+            };
+
+            questionSheets.push(sheet);
+            saveSheets();
+
+            // Clear inputs
+            document.getElementById('sheet-name').value = '';
+            document.getElementById('sheet-questions').value = '';
+
+            renderSheetsList();
+            alert('Sheet saved successfully!');
+        }
+
+        function renderSheetsList() {
+            const container = document.getElementById('sheets-list');
+            if (!container) return;
+
+            if (questionSheets.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No sheets saved yet</p>';
+                return;
+            }
+
+            container.innerHTML = questionSheets.map(sheet => `
+                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #333; font-size: 1.1em;">${sheet.name}</strong>
+                        <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                            📅 ${sheet.createdAt} | 📝 ${sheet.questions.split('Question:').length - 1} questions
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="useSheet('${sheet.id}')" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            ✓ Use
+                        </button>
+                        <button onclick="deleteSheet('${sheet.id}')" style="background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function useSheet(sheetId) {
+            const sheet = questionSheets.find(s => s.id === sheetId);
+            if (!sheet) return;
+
+            // Fill the quiz questions textarea
+            document.getElementById('quiz-text').value = sheet.questions;
+
+            // Close the modal
+            closeModal('manage-sheets-modal');
+
+            // If quiz modal is not open, open it
+            if (document.getElementById('quiz-modal').style.display !== 'flex') {
+                openModal('quiz-modal');
+            }
+
+            alert(`Sheet "${sheet.name}" loaded! Click "Parse" to preview questions.`);
+        }
+
+        function deleteSheet(sheetId) {
+            if (!confirm('Delete this sheet?')) return;
+
+            questionSheets = questionSheets.filter(s => s.id !== sheetId);
+            saveSheets();
+            renderSheetsList();
+        }
+
+        // Load sheets on page load
+        window.addEventListener('load', function() {
+            loadSheets();
+        });
+
+        // FILE NAME BUILDER FUNCTIONS
+        function populateFileSelects() {
+            const moduleSelect = document.getElementById('file-module-select');
+            const subjectSelect = document.getElementById('file-subject-select');
+
+            if (moduleSelect && quizOptions.modules) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect && quizOptions.subjects) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        function updateFileName() {
+            const moduleSelect = document.getElementById('file-module-select').value;
+            const moduleCustom = document.getElementById('file-module-custom').value.trim();
+            const subjectSelect = document.getElementById('file-subject-select').value;
+            const subjectCustom = document.getElementById('file-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('file-lecture-select').value;
+            const lectureCustom = document.getElementById('file-lecture-custom').value.trim();
+            const typeSelect = document.getElementById('file-type-select').value;
+            const typeCustom = document.getElementById('file-type-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || lectureSelect;
+            const type = typeCustom || typeSelect;
+
+            let name = '';
+            if (module) name += module;
+            if (subject) name += (name ? ' - ' : '') + subject;
+            if (lecture) name += (name ? ' - ' : '') + lecture;
+            if (type) name += (name ? ' - ' : '') + type;
+
+            document.getElementById('file-name').value = name;
+        }
+
+        // Original functions continue below...
+    </script>
+    <script src="https://apis.google.com/js/api.js">
+        // QUIZ NAME BUILDER FUNCTIONS
+        let quizOptions = {
+            modules: ['HPF', 'H', 'BSC', 'CGBP', 'ALF'],
+            subjects: ['Physiology', 'Histology', 'Anatomy', 'Embryology', 'Biochemistry', 'Pathology', 'Pharmacology', 'Microbiology']
+        };
+
+        // Load saved options from localStorage
+        function loadQuizOptions() {
+            const saved = localStorage.getItem('medquiz_options');
+            if (saved) {
+                quizOptions = JSON.parse(saved);
+            }
+            populateSelects();
+        }
+
+        // Save options to localStorage
+        function saveQuizOptions() {
+            localStorage.setItem('medquiz_options', JSON.stringify(quizOptions));
+        }
+
+        // Populate select dropdowns
+        function populateSelects() {
+            const moduleSelect = document.getElementById('quiz-module-select');
+            const subjectSelect = document.getElementById('quiz-subject-select');
+
+            if (moduleSelect) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        // Update quiz title based on selections
+        function updateQuizTitle() {
+            const moduleSelect = document.getElementById('quiz-module-select').value;
+            const moduleCustom = document.getElementById('quiz-module-custom').value.trim();
+            const subjectSelect = document.getElementById('quiz-subject-select').value;
+            const subjectCustom = document.getElementById('quiz-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('quiz-lecture-select').value;
+            const lectureCustom = document.getElementById('quiz-lecture-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || (lectureSelect ? 'Lecture ' + lectureSelect : '');
+
+            let title = '';
+            if (module) title += module;
+            if (subject) title += (title ? ' - ' : '') + subject;
+            if (lecture) title += (title ? ' - ' : '') + lecture;
+
+            document.getElementById('quiz-title').value = title;
+        }
+
+        // Show manage options modal
+        function showManageOptions() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+        }
+
+        // Render options in manage modal
+        function renderOptionsLists() {
+            const modulesDiv = document.getElementById('modules-list');
+            const subjectsDiv = document.getElementById('subjects-list');
+
+            if (modulesDiv) {
+                modulesDiv.innerHTML = quizOptions.modules.map((m, i) => 
+                    `<span style="background: #e3f2fd; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${m} <button onclick="removeOption('module', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+
+            if (subjectsDiv) {
+                subjectsDiv.innerHTML = quizOptions.subjects.map((s, i) => 
+                    `<span style="background: #e8f5e9; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${s} <button onclick="removeOption('subject', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+        }
+
+        // Add new option
+        function addOption(type) {
+            const input = document.getElementById('new-' + type);
+            const value = input.value.trim();
+
+            if (!value) return;
+
+            if (type === 'module') {
+                if (!quizOptions.modules.includes(value)) {
+                    quizOptions.modules.push(value);
+                }
+            } else if (type === 'subject') {
+                if (!quizOptions.subjects.includes(value)) {
+                    quizOptions.subjects.push(value);
+                }
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+            input.value = '';
+        }
+
+        // Remove option
+        function removeOption(type, index) {
+            if (type === 'module') {
+                quizOptions.modules.splice(index, 1);
+            } else if (type === 'subject') {
+                quizOptions.subjects.splice(index, 1);
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+        }
+
+        // Load options when page loads
+        window.addEventListener('load', function() {
+            loadQuizOptions();
+            populateFileSelects();
+        });
+
+        // MANAGE SHEETS FUNCTIONS
+        let questionSheets = [];
+
+        function loadSheets() {
+            const saved = localStorage.getItem('medquiz_sheets');
+            if (saved) {
+                questionSheets = JSON.parse(saved);
+            }
+        }
+
+        function saveSheets() {
+            localStorage.setItem('medquiz_sheets', JSON.stringify(questionSheets));
+        }
+
+        function showManageSheets() {
+            renderSheetsList();
+            openModal('manage-sheets-modal');
+        }
+
+        // Open Manage Options from File Modal
+        function showManageOptionsFromFile() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+
+            // Add listener to refresh file selects when closing manage options
+            const checkClosed = setInterval(() => {
+                if (document.getElementById('manage-options-modal').style.display !== 'flex') {
+                    clearInterval(checkClosed);
+                    populateFileSelects();
+                }
+            }, 500);
+        }
+
+        function saveSheet() {
+            const name = document.getElementById('sheet-name').value.trim();
+            const questions = document.getElementById('sheet-questions').value.trim();
+
+            if (!name) return alert('Please enter a sheet name');
+            if (!questions) return alert('Please enter questions');
+
+            const sheet = {
+                id: Date.now().toString(),
+                name: name,
+                questions: questions,
+                createdAt: new Date().toLocaleDateString()
+            };
+
+            questionSheets.push(sheet);
+            saveSheets();
+
+            // Clear inputs
+            document.getElementById('sheet-name').value = '';
+            document.getElementById('sheet-questions').value = '';
+
+            renderSheetsList();
+            alert('Sheet saved successfully!');
+        }
+
+        function renderSheetsList() {
+            const container = document.getElementById('sheets-list');
+            if (!container) return;
+
+            if (questionSheets.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No sheets saved yet</p>';
+                return;
+            }
+
+            container.innerHTML = questionSheets.map(sheet => `
+                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #333; font-size: 1.1em;">${sheet.name}</strong>
+                        <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                            📅 ${sheet.createdAt} | 📝 ${sheet.questions.split('Question:').length - 1} questions
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="useSheet('${sheet.id}')" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            ✓ Use
+                        </button>
+                        <button onclick="deleteSheet('${sheet.id}')" style="background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function useSheet(sheetId) {
+            const sheet = questionSheets.find(s => s.id === sheetId);
+            if (!sheet) return;
+
+            // Fill the quiz questions textarea
+            document.getElementById('quiz-text').value = sheet.questions;
+
+            // Close the modal
+            closeModal('manage-sheets-modal');
+
+            // If quiz modal is not open, open it
+            if (document.getElementById('quiz-modal').style.display !== 'flex') {
+                openModal('quiz-modal');
+            }
+
+            alert(`Sheet "${sheet.name}" loaded! Click "Parse" to preview questions.`);
+        }
+
+        function deleteSheet(sheetId) {
+            if (!confirm('Delete this sheet?')) return;
+
+            questionSheets = questionSheets.filter(s => s.id !== sheetId);
+            saveSheets();
+            renderSheetsList();
+        }
+
+        // Load sheets on page load
+        window.addEventListener('load', function() {
+            loadSheets();
+        });
+
+        // FILE NAME BUILDER FUNCTIONS
+        function populateFileSelects() {
+            const moduleSelect = document.getElementById('file-module-select');
+            const subjectSelect = document.getElementById('file-subject-select');
+
+            if (moduleSelect && quizOptions.modules) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect && quizOptions.subjects) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        function updateFileName() {
+            const moduleSelect = document.getElementById('file-module-select').value;
+            const moduleCustom = document.getElementById('file-module-custom').value.trim();
+            const subjectSelect = document.getElementById('file-subject-select').value;
+            const subjectCustom = document.getElementById('file-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('file-lecture-select').value;
+            const lectureCustom = document.getElementById('file-lecture-custom').value.trim();
+            const typeSelect = document.getElementById('file-type-select').value;
+            const typeCustom = document.getElementById('file-type-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || lectureSelect;
+            const type = typeCustom || typeSelect;
+
+            let name = '';
+            if (module) name += module;
+            if (subject) name += (name ? ' - ' : '') + subject;
+            if (lecture) name += (name ? ' - ' : '') + lecture;
+            if (type) name += (name ? ' - ' : '') + type;
+
+            document.getElementById('file-name').value = name;
+        }
+
+        // Original functions continue below...
+    </script>
+    <script src="https://accounts.google.com/gsi/client">
+        // QUIZ NAME BUILDER FUNCTIONS
+        let quizOptions = {
+            modules: ['HPF', 'H', 'BSC', 'CGBP', 'ALF'],
+            subjects: ['Physiology', 'Histology', 'Anatomy', 'Embryology', 'Biochemistry', 'Pathology', 'Pharmacology', 'Microbiology']
+        };
+
+        // Load saved options from localStorage
+        function loadQuizOptions() {
+            const saved = localStorage.getItem('medquiz_options');
+            if (saved) {
+                quizOptions = JSON.parse(saved);
+            }
+            populateSelects();
+        }
+
+        // Save options to localStorage
+        function saveQuizOptions() {
+            localStorage.setItem('medquiz_options', JSON.stringify(quizOptions));
+        }
+
+        // Populate select dropdowns
+        function populateSelects() {
+            const moduleSelect = document.getElementById('quiz-module-select');
+            const subjectSelect = document.getElementById('quiz-subject-select');
+
+            if (moduleSelect) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        // Update quiz title based on selections
+        function updateQuizTitle() {
+            const moduleSelect = document.getElementById('quiz-module-select').value;
+            const moduleCustom = document.getElementById('quiz-module-custom').value.trim();
+            const subjectSelect = document.getElementById('quiz-subject-select').value;
+            const subjectCustom = document.getElementById('quiz-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('quiz-lecture-select').value;
+            const lectureCustom = document.getElementById('quiz-lecture-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || (lectureSelect ? 'Lecture ' + lectureSelect : '');
+
+            let title = '';
+            if (module) title += module;
+            if (subject) title += (title ? ' - ' : '') + subject;
+            if (lecture) title += (title ? ' - ' : '') + lecture;
+
+            document.getElementById('quiz-title').value = title;
+        }
+
+        // Show manage options modal
+        function showManageOptions() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+        }
+
+        // Render options in manage modal
+        function renderOptionsLists() {
+            const modulesDiv = document.getElementById('modules-list');
+            const subjectsDiv = document.getElementById('subjects-list');
+
+            if (modulesDiv) {
+                modulesDiv.innerHTML = quizOptions.modules.map((m, i) => 
+                    `<span style="background: #e3f2fd; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${m} <button onclick="removeOption('module', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+
+            if (subjectsDiv) {
+                subjectsDiv.innerHTML = quizOptions.subjects.map((s, i) => 
+                    `<span style="background: #e8f5e9; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${s} <button onclick="removeOption('subject', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+        }
+
+        // Add new option
+        function addOption(type) {
+            const input = document.getElementById('new-' + type);
+            const value = input.value.trim();
+
+            if (!value) return;
+
+            if (type === 'module') {
+                if (!quizOptions.modules.includes(value)) {
+                    quizOptions.modules.push(value);
+                }
+            } else if (type === 'subject') {
+                if (!quizOptions.subjects.includes(value)) {
+                    quizOptions.subjects.push(value);
+                }
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+            input.value = '';
+        }
+
+        // Remove option
+        function removeOption(type, index) {
+            if (type === 'module') {
+                quizOptions.modules.splice(index, 1);
+            } else if (type === 'subject') {
+                quizOptions.subjects.splice(index, 1);
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+        }
+
+        // Load options when page loads
+        window.addEventListener('load', function() {
+            loadQuizOptions();
+            populateFileSelects();
+        });
+
+        // MANAGE SHEETS FUNCTIONS
+        let questionSheets = [];
+
+        function loadSheets() {
+            const saved = localStorage.getItem('medquiz_sheets');
+            if (saved) {
+                questionSheets = JSON.parse(saved);
+            }
+        }
+
+        function saveSheets() {
+            localStorage.setItem('medquiz_sheets', JSON.stringify(questionSheets));
+        }
+
+        function showManageSheets() {
+            renderSheetsList();
+            openModal('manage-sheets-modal');
+        }
+
+        // Open Manage Options from File Modal
+        function showManageOptionsFromFile() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+
+            // Add listener to refresh file selects when closing manage options
+            const checkClosed = setInterval(() => {
+                if (document.getElementById('manage-options-modal').style.display !== 'flex') {
+                    clearInterval(checkClosed);
+                    populateFileSelects();
+                }
+            }, 500);
+        }
+
+        function saveSheet() {
+            const name = document.getElementById('sheet-name').value.trim();
+            const questions = document.getElementById('sheet-questions').value.trim();
+
+            if (!name) return alert('Please enter a sheet name');
+            if (!questions) return alert('Please enter questions');
+
+            const sheet = {
+                id: Date.now().toString(),
+                name: name,
+                questions: questions,
+                createdAt: new Date().toLocaleDateString()
+            };
+
+            questionSheets.push(sheet);
+            saveSheets();
+
+            // Clear inputs
+            document.getElementById('sheet-name').value = '';
+            document.getElementById('sheet-questions').value = '';
+
+            renderSheetsList();
+            alert('Sheet saved successfully!');
+        }
+
+        function renderSheetsList() {
+            const container = document.getElementById('sheets-list');
+            if (!container) return;
+
+            if (questionSheets.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No sheets saved yet</p>';
+                return;
+            }
+
+            container.innerHTML = questionSheets.map(sheet => `
+                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #333; font-size: 1.1em;">${sheet.name}</strong>
+                        <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                            📅 ${sheet.createdAt} | 📝 ${sheet.questions.split('Question:').length - 1} questions
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="useSheet('${sheet.id}')" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            ✓ Use
+                        </button>
+                        <button onclick="deleteSheet('${sheet.id}')" style="background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function useSheet(sheetId) {
+            const sheet = questionSheets.find(s => s.id === sheetId);
+            if (!sheet) return;
+
+            // Fill the quiz questions textarea
+            document.getElementById('quiz-text').value = sheet.questions;
+
+            // Close the modal
+            closeModal('manage-sheets-modal');
+
+            // If quiz modal is not open, open it
+            if (document.getElementById('quiz-modal').style.display !== 'flex') {
+                openModal('quiz-modal');
+            }
+
+            alert(`Sheet "${sheet.name}" loaded! Click "Parse" to preview questions.`);
+        }
+
+        function deleteSheet(sheetId) {
+            if (!confirm('Delete this sheet?')) return;
+
+            questionSheets = questionSheets.filter(s => s.id !== sheetId);
+            saveSheets();
+            renderSheetsList();
+        }
+
+        // Load sheets on page load
+        window.addEventListener('load', function() {
+            loadSheets();
+        });
+
+        // FILE NAME BUILDER FUNCTIONS
+        function populateFileSelects() {
+            const moduleSelect = document.getElementById('file-module-select');
+            const subjectSelect = document.getElementById('file-subject-select');
+
+            if (moduleSelect && quizOptions.modules) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect && quizOptions.subjects) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        function updateFileName() {
+            const moduleSelect = document.getElementById('file-module-select').value;
+            const moduleCustom = document.getElementById('file-module-custom').value.trim();
+            const subjectSelect = document.getElementById('file-subject-select').value;
+            const subjectCustom = document.getElementById('file-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('file-lecture-select').value;
+            const lectureCustom = document.getElementById('file-lecture-custom').value.trim();
+            const typeSelect = document.getElementById('file-type-select').value;
+            const typeCustom = document.getElementById('file-type-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || lectureSelect;
+            const type = typeCustom || typeSelect;
+
+            let name = '';
+            if (module) name += module;
+            if (subject) name += (name ? ' - ' : '') + subject;
+            if (lecture) name += (name ? ' - ' : '') + lecture;
+            if (type) name += (name ? ' - ' : '') + type;
+
+            document.getElementById('file-name').value = name;
+        }
+
+        // Original functions continue below...
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
@@ -88,10 +1228,10 @@
         </div>
 
         <div class="stats-grid">
-            <div class="stat-card"><div class="stat-number" id="total-students">0</div><div class="stat-label">Students</div></div>
+            <div class="stat-card"><div class="stat-number" id="total-students">0</div><div class="stat-label">Total Users</div></div>
+            <div class="stat-card"><div class="stat-number" id="online-users">0</div><div class="stat-label">Online Now</div></div>
+            <div class="stat-card"><div class="stat-number" id="today-users">0</div><div class="stat-label">Today's Users</div></div>
             <div class="stat-card"><div class="stat-number" id="total-quizzes">0</div><div class="stat-label">Quizzes</div></div>
-            <div class="stat-card"><div class="stat-number" id="total-questions">0</div><div class="stat-label">Questions</div></div>
-            <div class="stat-card"><div class="stat-number" id="total-files">0</div><div class="stat-label">Files</div></div>
         </div>
 
         <div class="nav-tabs">
@@ -121,7 +1261,27 @@
         <div id="notifications-tab" class="section hidden">
             <h2>Send Notification</h2>
             <div class="form-group"><label>Message</label><input type="text" id="notif-msg" placeholder="Message"></div>
-            <div class="form-group"><label>Duration</label><select id="notif-dur"><option value="1">1 Day</option><option value="7">1 Week</option><option value="30">1 Month</option></select></div>
+
+            <div class="form-group">
+                <label>Duration</label>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div style="text-align: center;">
+                        <input type="number" id="notif-days" min="0" value="0" style="width: 80px; text-align: center; font-size: 1.2em; padding: 10px;">
+                        <div style="font-size: 0.9em; color: #666; margin-top: 5px;">Days</div>
+                    </div>
+                    <div style="font-size: 1.5em; color: #667eea;">:</div>
+                    <div style="text-align: center;">
+                        <input type="number" id="notif-hours" min="0" max="23" value="0" style="width: 80px; text-align: center; font-size: 1.2em; padding: 10px;">
+                        <div style="font-size: 0.9em; color: #666; margin-top: 5px;">Hours</div>
+                    </div>
+                    <div style="font-size: 1.5em; color: #667eea;">:</div>
+                    <div style="text-align: center;">
+                        <input type="number" id="notif-minutes" min="0" max="59" value="0" style="width: 80px; text-align: center; font-size: 1.2em; padding: 10px;">
+                        <div style="font-size: 0.9em; color: #666; margin-top: 5px;">Minutes</div>
+                    </div>
+                </div>
+            </div>
+
             <button class="btn btn-primary" onclick="sendNotification()">Send</button>
             <h3 style="margin-top: 20px;">Active</h3>
             <div id="active-notifications"></div>
@@ -141,11 +1301,79 @@
 
     <!-- Quiz Modal -->
     <div id="quiz-modal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px;">
             <button class="close-btn" onclick="closeModal('quiz-modal')">&times;</button>
             <h2>New Quiz</h2>
             <p style="color: #666;">Location: <span id="quiz-loc">Home</span></p>
-            <div class="form-group"><label>Title</label><input type="text" id="quiz-title" placeholder="Quiz title"></div>
+
+            <!-- Quiz Name Builder -->
+            <div style="background: #f0f4ff; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px; color: #667eea;">📋 Quiz Name Builder</h3>
+
+                <!-- Module Selection -->
+                <div class="form-group">
+                    <label>Module (Batch)</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <select id="quiz-module-select" onchange="updateQuizTitle()" style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 10px; font-size: 1em;">
+                            <option value="">-- Select Module --</option>
+                            <option value="HPF">HPF</option>
+                            <option value="H">H</option>
+                            <option value="BSC">BSC</option>
+                            <option value="CGBP">CGBP</option>
+                            <option value="ALF">ALF</option>
+                        </select>
+                        <input type="text" id="quiz-module-custom" placeholder="Or type custom" oninput="updateQuizTitle()" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                    </div>
+                </div>
+
+                <!-- Subject Selection -->
+                <div class="form-group">
+                    <label>Subject</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <select id="quiz-subject-select" onchange="updateQuizTitle()" style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 10px; font-size: 1em;">
+                            <option value="">-- Select Subject --</option>
+                            <option value="Physiology">Physiology</option>
+                            <option value="Histology">Histology</option>
+                            <option value="Anatomy">Anatomy</option>
+                            <option value="Embryology">Embryology</option>
+                            <option value="Biochemistry">Biochemistry</option>
+                            <option value="Pathology">Pathology</option>
+                            <option value="Pharmacology">Pharmacology</option>
+                            <option value="Microbiology">Microbiology</option>
+                        </select>
+                        <input type="text" id="quiz-subject-custom" placeholder="Or type custom" oninput="updateQuizTitle()" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                    </div>
+                </div>
+
+                <!-- Lecture Number -->
+                <div class="form-group">
+                    <label>Lecture Number</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <select id="quiz-lecture-select" onchange="updateQuizTitle()" style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 10px; font-size: 1em;">
+                            <option value="">-- Select Lecture --</option>
+                            ${Array.from({length: 50}, (_, i) => `<option value="${i+1}">Lecture ${i+1}</option>`).join('')}
+                        </select>
+                        <input type="text" id="quiz-lecture-custom" placeholder="Or type custom (e.g., Midterm, Final)" oninput="updateQuizTitle()" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                    </div>
+                </div>
+
+                <!-- Final Title Display -->
+                <div class="form-group" style="margin-top: 20px; padding: 15px; background: white; border-radius: 10px; border: 2px solid #4caf50;">
+                    <label style="color: #4caf50; font-weight: bold;">Final Quiz Title:</label>
+                    <input type="text" id="quiz-title" readonly style="width: 100%; padding: 12px; border: none; font-size: 1.2em; font-weight: bold; color: #333; background: transparent;">
+                </div>
+
+                <!-- Manage Options Buttons -->
+                <div style="margin-top: 15px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button type="button" onclick="showManageOptions()" style="background: #eee; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; color: #667eea;">
+                        ⚙️ Manage Options (Add/Remove)
+                    </button>
+                    <button type="button" onclick="showManageSheets()" style="background: #e3f2fd; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; color: #1976d2;">
+                        📊 Manage Sheets
+                    </button>
+                </div>
+            </div>
+
             <div class="form-group"><label>Questions (Format: Question, A), B), C), D), Correct: X, Explanation)</label><textarea class="paste-area" id="quiz-text" placeholder="Question: What is...?&#10;A) Option 1&#10;B) Option 2&#10;C) Option 3&#10;D) Option 4&#10;Correct: B&#10;Explanation: Because..."></textarea></div>
             <button class="btn btn-primary" onclick="parseQuiz()">Parse</button>
             <div id="quiz-preview" class="hidden">
@@ -156,16 +1384,155 @@
         </div>
     </div>
 
+    <!-- Manage Options Modal -->
+    <div id="manage-options-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <button class="close-btn" onclick="closeModal('manage-options-modal')">&times;</button>
+            <h2>⚙️ Manage Quiz Options</h2>
+
+            <div style="margin: 20px 0;">
+                <h3 style="color: #667eea;">Modules</h3>
+                <div id="modules-list" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-module" placeholder="Add new module" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                    <button onclick="addOption('module')" class="btn btn-primary">Add</button>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h3 style="color: #667eea;">Subjects</h3>
+                <div id="subjects-list" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-subject" placeholder="Add new subject" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                    <button onclick="addOption('subject')" class="btn btn-primary">Add</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 10px;">
+                <small>💡 Changes are saved automatically and will be available for all future quizzes.</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Sheets Modal -->
+    <div id="manage-sheets-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <button class="close-btn" onclick="closeModal('manage-sheets-modal')">&times;</button>
+            <h2>📊 Manage Question Sheets</h2>
+            <p style="color: #666; margin-bottom: 20px;">Create and manage reusable question templates</p>
+
+            <!-- Create New Sheet -->
+            <div style="background: #f0f4ff; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">➕ Create New Sheet</h3>
+                <div class="form-group">
+                    <label>Sheet Name</label>
+                    <input type="text" id="sheet-name" placeholder="e.g., Cardiology MCQs" style="width: 100%; padding: 12px; border: 2px solid #667eea; border-radius: 10px; font-size: 1em;">
+                </div>
+                <div class="form-group">
+                    <label>Questions (Same format as quiz)</label>
+                    <textarea id="sheet-questions" class="paste-area" placeholder="Question: What is...?&#10;A) Option 1&#10;B) Option 2&#10;C) Option 3&#10;D) Option 4&#10;Correct: B&#10;Explanation: Because...&#10;&#10;Question: Next question..." style="height: 150px;"></textarea>
+                </div>
+                <button onclick="saveSheet()" class="btn btn-primary" style="width: 100%;">💾 Save Sheet</button>
+            </div>
+
+            <!-- Saved Sheets List -->
+            <div>
+                <h3 style="color: #667eea; margin-bottom: 15px;">📋 Saved Sheets</h3>
+                <div id="sheets-list" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Sheets will be loaded here -->
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 10px;">
+                <small>💡 Click "Use Sheet" to auto-fill the questions in the quiz builder. Sheets are saved locally.</small>
+            </div>
+        </div>
+    </div>
+
     <!-- File Modal - Google Drive Link -->
     <div id="file-modal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px;">
             <button class="close-btn" onclick="closeModal('file-modal')">&times;</button>
             <h2>📎 Add File Link</h2>
             <p style="color: #666;">Location: <span id="file-loc">Home</span></p>
 
-            <div style="background: #f0f4ff; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                <h4>How to add a file:</h4>
-                <ol style="text-align: left; margin: 10px 0;">
+            <!-- File Name Builder -->
+            <div style="background: #f0f4ff; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px; color: #667eea;">📋 File Name Builder</h3>
+
+                <!-- Module Selection -->
+                <div class="form-group">
+                    <label>Module (Batch)</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <select id="file-module-select" onchange="updateFileName()" style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 10px; font-size: 1em;">
+                            <option value="">-- Select Module --</option>
+                        </select>
+                        <input type="text" id="file-module-custom" placeholder="Or type custom" oninput="updateFileName()" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                    </div>
+                </div>
+
+                <!-- Subject Selection -->
+                <div class="form-group">
+                    <label>Subject</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <select id="file-subject-select" onchange="updateFileName()" style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 10px; font-size: 1em;">
+                            <option value="">-- Select Subject --</option>
+                        </select>
+                        <input type="text" id="file-subject-custom" placeholder="Or type custom" oninput="updateFileName()" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                    </div>
+                </div>
+
+                <!-- Lecture Number -->
+                <div class="form-group">
+                    <label>Lecture Number / Type</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <select id="file-lecture-select" onchange="updateFileName()" style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 10px; font-size: 1em;">
+                            <option value="">-- Select Lecture --</option>
+                            ${Array.from({length: 50}, (_, i) => `<option value="Lecture ${i+1}">Lecture ${i+1}</option>`).join('')}
+                            <option value="Summary">Summary</option>
+                            <option value="Review">Review</option>
+                            <option value="Midterm">Midterm</option>
+                            <option value="Final">Final</option>
+                            <option value="Notes">Notes</option>
+                        </select>
+                        <input type="text" id="file-lecture-custom" placeholder="Or type custom" oninput="updateFileName()" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                    </div>
+                </div>
+
+                <!-- File Type -->
+                <div class="form-group">
+                    <label>File Type</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <select id="file-type-select" onchange="updateFileName()" style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 10px; font-size: 1em;">
+                            <option value="">-- Select Type --</option>
+                            <option value="PDF">PDF Document</option>
+                            <option value="PPT">PowerPoint</option>
+                            <option value="Word">Word Document</option>
+                            <option value="Video">Video</option>
+                            <option value="Sheet">Question Sheet</option>
+                        </select>
+                        <input type="text" id="file-type-custom" placeholder="Or type custom" oninput="updateFileName()" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                    </div>
+                </div>
+
+                <!-- Final File Name Display -->
+                <div class="form-group" style="margin-top: 20px; padding: 15px; background: white; border-radius: 10px; border: 2px solid #4caf50;">
+                    <label style="color: #4caf50; font-weight: bold;">Final File Name:</label>
+                    <input type="text" id="file-name" readonly style="width: 100%; padding: 12px; border: none; font-size: 1.2em; font-weight: bold; color: #333; background: transparent;">
+                </div>
+
+                <!-- Manage Options Button -->
+                <div style="margin-top: 15px; text-align: center;">
+                    <button type="button" onclick="showManageOptionsFromFile()" style="background: #e3f2fd; border: none; padding: 10px 25px; border-radius: 25px; cursor: pointer; color: #1976d2; font-size: 1em;">
+                        ⚙️ Manage Options (Add/Remove Modules & Subjects)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Google Drive Instructions -->
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <h4 style="color: #1976d2; margin-bottom: 10px;">📖 How to add a file:</h4>
+                <ol style="text-align: left; margin: 10px 0; padding-left: 20px; color: #555;">
                     <li>Upload your file to <strong>Google Drive</strong></li>
                     <li>Right-click the file → <strong>Share</strong> → <strong>Copy link</strong></li>
                     <li>Change access to <strong>"Anyone with the link"</strong></li>
@@ -174,21 +1541,16 @@
             </div>
 
             <div class="form-group">
-                <label>File Name</label>
-                <input type="text" id="file-name" placeholder="e.g., Physiology Notes.pdf" class="link-input">
-            </div>
-
-            <div class="form-group">
                 <label>Google Drive Link</label>
-                <input type="text" id="file-url" placeholder="https://drive.google.com/file/d/..." class="link-input">
+                <input type="text" id="file-url" placeholder="https://drive.google.com/file/d/..." class="link-input" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
             </div>
 
             <div class="form-group">
                 <label>File Size (KB) - Optional</label>
-                <input type="number" id="file-size" placeholder="e.g., 1024" class="link-input">
+                <input type="number" id="file-size" placeholder="e.g., 1024" class="link-input" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
             </div>
 
-            <button class="btn btn-success" onclick="saveFileLink()">💾 Save File</button>
+            <button class="btn btn-success" onclick="saveFileLink()" style="width: 100%; padding: 15px; font-size: 1.1em;">💾 Save File</button>
         </div>
     </div>
 
@@ -258,11 +1620,45 @@
         }
 
         function loadStats() {
-            db.collection('users').get().then(s => { document.getElementById('total-students').textContent = s.size; });
-            db.collection('quizzes').get().then(s => { document.getElementById('total-quizzes').textContent = s.size; });
-            db.collectionGroup('questions').get().then(s => { document.getElementById('total-questions').textContent = s.size; });
-            db.collection('files').get().then(s => { document.getElementById('total-files').textContent = s.size; });
+            // Total users
+            db.collection('users').get().then(s => { 
+                document.getElementById('total-students').textContent = s.size; 
+            });
+
+            // Online users (active in last 5 minutes)
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            db.collection('users').where('lastActive', '>=', fiveMinutesAgo).get().then(s => {
+                document.getElementById('online-users').textContent = s.size;
+            }).catch(() => {
+                document.getElementById('online-users').textContent = '0';
+            });
+
+            // Today's users
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            db.collection('users').where('lastActive', '>=', today).get().then(s => {
+                document.getElementById('today-users').textContent = s.size;
+            }).catch(() => {
+                document.getElementById('today-users').textContent = '0';
+            });
+
+            // Total quizzes
+            db.collection('quizzes').get().then(s => { 
+                document.getElementById('total-quizzes').textContent = s.size; 
+            });
         }
+
+        // Update user activity when they use the site
+        function updateUserActivity() {
+            if (currentUser) {
+                db.collection('users').doc(currentUser.id).update({
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        }
+
+        // Update activity every minute
+        setInterval(updateUserActivity, 60000);
 
         function showTab(tab) {
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -468,7 +1864,7 @@
             if (currentQuestions.length === 0) return alert('No valid questions');
             document.getElementById('quiz-preview').classList.remove('hidden');
             document.getElementById('preview-count').textContent = currentQuestions.length;
-            document.getElementById('preview-list').innerHTML = currentQuestions.map((q, i) => `<div class="question-preview"><strong>Q${i+1}:</strong> ${q.question}<br>${q.options.map((o, j) => `<span style="${j===q.correctAnswer?'color:green;font-weight:bold':''}">${String.fromCharCode(65+j)}) ${o}</span>`).join('<br>')}</div>`).join('');
+            document.getElementById('preview-list').innerHTML = currentQuestions.map((q, i) => `<div class="question-preview"><strong>Q${i+1}:</strong> ${q.question}<br>${q.options.map((o, j) => `<span style="${j===q.correctAnswer?'color:green;font-weight:bold':''}">${String.fromCharCode(65+j)}) ${o}</span>`).join('<br>')}<br><br><em style="color: #666;">💡 Explanation: ${q.explanation || 'None'}</em></div>`).join('');
         }
 
         function saveQuiz() {
@@ -574,12 +1970,39 @@
 
         function sendNotification() {
             const msg = document.getElementById('notif-msg').value.trim();
-            const dur = parseInt(document.getElementById('notif-dur').value);
+            const days = parseInt(document.getElementById('notif-days').value) || 0;
+            const hours = parseInt(document.getElementById('notif-hours').value) || 0;
+            const minutes = parseInt(document.getElementById('notif-minutes').value) || 0;
+
             if (!msg) return alert('Enter message');
-            const exp = new Date(); exp.setDate(exp.getDate() + dur);
-            db.collection('notifications').add({ message: msg, expiry: exp, active: true, createdAt: new Date() }).then(() => {
+
+            // Calculate total duration in minutes
+            const totalMinutes = (days * 24 * 60) + (hours * 60) + minutes;
+
+            if (totalMinutes <= 0) return alert('Please enter a valid duration');
+
+            const exp = new Date();
+            exp.setMinutes(exp.getMinutes() + totalMinutes);
+
+            // Format duration text for display
+            let durationText = '';
+            if (days > 0) durationText += days + ' day' + (days > 1 ? 's' : '') + ' ';
+            if (hours > 0) durationText += hours + ' hour' + (hours > 1 ? 's' : '') + ' ';
+            if (minutes > 0) durationText += minutes + ' min' + (minutes > 1 ? 's' : '');
+
+            db.collection('notifications').add({ 
+                message: msg, 
+                expiry: exp, 
+                durationText: durationText.trim(),
+                active: true, 
+                createdAt: new Date() 
+            }).then(() => {
                 document.getElementById('notif-msg').value = '';
+                document.getElementById('notif-days').value = '0';
+                document.getElementById('notif-hours').value = '0';
+                document.getElementById('notif-minutes').value = '0';
                 loadNotifications();
+                alert('Notification sent! Duration: ' + durationText);
             });
         }
 
@@ -588,8 +2011,14 @@
                 let html = '';
                 snap.forEach(doc => {
                     const n = doc.data();
-                    const d = n.expiry.toDate ? n.expiry.toDate().toLocaleDateString() : new Date(n.expiry).toLocaleDateString();
-                    html += `<div style="padding: 15px; background: #e3f2fd; border-radius: 10px; margin-bottom: 10px;">${n.message}<br><small>Expires: ${d}</small><button class="btn btn-danger btn-small" style="float: right;" onclick="db.collection('notifications').doc('${doc.id}').update({active: false}); loadNotifications();">Delete</button></div>`;
+                    const d = n.expiry.toDate ? n.expiry.toDate().toLocaleString() : new Date(n.expiry).toLocaleString();
+                    const duration = n.durationText || 'Unknown';
+                    html += `<div style="padding: 15px; background: #e3f2fd; border-radius: 10px; margin-bottom: 10px;">
+                        <strong>${n.message}</strong><br>
+                        <small style="color: #666;">⏱️ Duration: ${duration}</small><br>
+                        <small style="color: #999;">Expires: ${d}</small>
+                        <button class="btn btn-danger btn-small" style="float: right; margin-top: -30px;" onclick="db.collection('notifications').doc('${doc.id}').update({active: false}); loadNotifications();">Delete</button>
+                    </div>`;
                 });
                 document.getElementById('active-notifications').innerHTML = html || '<p>No active notifications</p>';
             });
@@ -598,6 +2027,291 @@
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; };
+    
+        // QUIZ NAME BUILDER FUNCTIONS
+        let quizOptions = {
+            modules: ['HPF', 'H', 'BSC', 'CGBP', 'ALF'],
+            subjects: ['Physiology', 'Histology', 'Anatomy', 'Embryology', 'Biochemistry', 'Pathology', 'Pharmacology', 'Microbiology']
+        };
+
+        // Load saved options from localStorage
+        function loadQuizOptions() {
+            const saved = localStorage.getItem('medquiz_options');
+            if (saved) {
+                quizOptions = JSON.parse(saved);
+            }
+            populateSelects();
+        }
+
+        // Save options to localStorage
+        function saveQuizOptions() {
+            localStorage.setItem('medquiz_options', JSON.stringify(quizOptions));
+        }
+
+        // Populate select dropdowns
+        function populateSelects() {
+            const moduleSelect = document.getElementById('quiz-module-select');
+            const subjectSelect = document.getElementById('quiz-subject-select');
+
+            if (moduleSelect) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        // Update quiz title based on selections
+        function updateQuizTitle() {
+            const moduleSelect = document.getElementById('quiz-module-select').value;
+            const moduleCustom = document.getElementById('quiz-module-custom').value.trim();
+            const subjectSelect = document.getElementById('quiz-subject-select').value;
+            const subjectCustom = document.getElementById('quiz-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('quiz-lecture-select').value;
+            const lectureCustom = document.getElementById('quiz-lecture-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || (lectureSelect ? 'Lecture ' + lectureSelect : '');
+
+            let title = '';
+            if (module) title += module;
+            if (subject) title += (title ? ' - ' : '') + subject;
+            if (lecture) title += (title ? ' - ' : '') + lecture;
+
+            document.getElementById('quiz-title').value = title;
+        }
+
+        // Show manage options modal
+        function showManageOptions() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+        }
+
+        // Render options in manage modal
+        function renderOptionsLists() {
+            const modulesDiv = document.getElementById('modules-list');
+            const subjectsDiv = document.getElementById('subjects-list');
+
+            if (modulesDiv) {
+                modulesDiv.innerHTML = quizOptions.modules.map((m, i) => 
+                    `<span style="background: #e3f2fd; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${m} <button onclick="removeOption('module', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+
+            if (subjectsDiv) {
+                subjectsDiv.innerHTML = quizOptions.subjects.map((s, i) => 
+                    `<span style="background: #e8f5e9; padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                        ${s} <button onclick="removeOption('subject', ${i})" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    </span>`
+                ).join('');
+            }
+        }
+
+        // Add new option
+        function addOption(type) {
+            const input = document.getElementById('new-' + type);
+            const value = input.value.trim();
+
+            if (!value) return;
+
+            if (type === 'module') {
+                if (!quizOptions.modules.includes(value)) {
+                    quizOptions.modules.push(value);
+                }
+            } else if (type === 'subject') {
+                if (!quizOptions.subjects.includes(value)) {
+                    quizOptions.subjects.push(value);
+                }
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+            input.value = '';
+        }
+
+        // Remove option
+        function removeOption(type, index) {
+            if (type === 'module') {
+                quizOptions.modules.splice(index, 1);
+            } else if (type === 'subject') {
+                quizOptions.subjects.splice(index, 1);
+            }
+
+            saveQuizOptions();
+            renderOptionsLists();
+            populateSelects();
+        }
+
+        // Load options when page loads
+        window.addEventListener('load', function() {
+            loadQuizOptions();
+            populateFileSelects();
+        });
+
+        // MANAGE SHEETS FUNCTIONS
+        let questionSheets = [];
+
+        function loadSheets() {
+            const saved = localStorage.getItem('medquiz_sheets');
+            if (saved) {
+                questionSheets = JSON.parse(saved);
+            }
+        }
+
+        function saveSheets() {
+            localStorage.setItem('medquiz_sheets', JSON.stringify(questionSheets));
+        }
+
+        function showManageSheets() {
+            renderSheetsList();
+            openModal('manage-sheets-modal');
+        }
+
+        // Open Manage Options from File Modal
+        function showManageOptionsFromFile() {
+            renderOptionsLists();
+            openModal('manage-options-modal');
+
+            // Add listener to refresh file selects when closing manage options
+            const checkClosed = setInterval(() => {
+                if (document.getElementById('manage-options-modal').style.display !== 'flex') {
+                    clearInterval(checkClosed);
+                    populateFileSelects();
+                }
+            }, 500);
+        }
+
+        function saveSheet() {
+            const name = document.getElementById('sheet-name').value.trim();
+            const questions = document.getElementById('sheet-questions').value.trim();
+
+            if (!name) return alert('Please enter a sheet name');
+            if (!questions) return alert('Please enter questions');
+
+            const sheet = {
+                id: Date.now().toString(),
+                name: name,
+                questions: questions,
+                createdAt: new Date().toLocaleDateString()
+            };
+
+            questionSheets.push(sheet);
+            saveSheets();
+
+            // Clear inputs
+            document.getElementById('sheet-name').value = '';
+            document.getElementById('sheet-questions').value = '';
+
+            renderSheetsList();
+            alert('Sheet saved successfully!');
+        }
+
+        function renderSheetsList() {
+            const container = document.getElementById('sheets-list');
+            if (!container) return;
+
+            if (questionSheets.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No sheets saved yet</p>';
+                return;
+            }
+
+            container.innerHTML = questionSheets.map(sheet => `
+                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #333; font-size: 1.1em;">${sheet.name}</strong>
+                        <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                            📅 ${sheet.createdAt} | 📝 ${sheet.questions.split('Question:').length - 1} questions
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="useSheet('${sheet.id}')" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            ✓ Use
+                        </button>
+                        <button onclick="deleteSheet('${sheet.id}')" style="background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function useSheet(sheetId) {
+            const sheet = questionSheets.find(s => s.id === sheetId);
+            if (!sheet) return;
+
+            // Fill the quiz questions textarea
+            document.getElementById('quiz-text').value = sheet.questions;
+
+            // Close the modal
+            closeModal('manage-sheets-modal');
+
+            // If quiz modal is not open, open it
+            if (document.getElementById('quiz-modal').style.display !== 'flex') {
+                openModal('quiz-modal');
+            }
+
+            alert(`Sheet "${sheet.name}" loaded! Click "Parse" to preview questions.`);
+        }
+
+        function deleteSheet(sheetId) {
+            if (!confirm('Delete this sheet?')) return;
+
+            questionSheets = questionSheets.filter(s => s.id !== sheetId);
+            saveSheets();
+            renderSheetsList();
+        }
+
+        // Load sheets on page load
+        window.addEventListener('load', function() {
+            loadSheets();
+        });
+
+        // FILE NAME BUILDER FUNCTIONS
+        function populateFileSelects() {
+            const moduleSelect = document.getElementById('file-module-select');
+            const subjectSelect = document.getElementById('file-subject-select');
+
+            if (moduleSelect && quizOptions.modules) {
+                moduleSelect.innerHTML = '<option value="">-- Select Module --</option>' + 
+                    quizOptions.modules.map(m => `<option value="${m}">${m}</option>`).join('');
+            }
+            if (subjectSelect && quizOptions.subjects) {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>' + 
+                    quizOptions.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+        }
+
+        function updateFileName() {
+            const moduleSelect = document.getElementById('file-module-select').value;
+            const moduleCustom = document.getElementById('file-module-custom').value.trim();
+            const subjectSelect = document.getElementById('file-subject-select').value;
+            const subjectCustom = document.getElementById('file-subject-custom').value.trim();
+            const lectureSelect = document.getElementById('file-lecture-select').value;
+            const lectureCustom = document.getElementById('file-lecture-custom').value.trim();
+            const typeSelect = document.getElementById('file-type-select').value;
+            const typeCustom = document.getElementById('file-type-custom').value.trim();
+
+            const module = moduleCustom || moduleSelect;
+            const subject = subjectCustom || subjectSelect;
+            const lecture = lectureCustom || lectureSelect;
+            const type = typeCustom || typeSelect;
+
+            let name = '';
+            if (module) name += module;
+            if (subject) name += (name ? ' - ' : '') + subject;
+            if (lecture) name += (name ? ' - ' : '') + lecture;
+            if (type) name += (name ? ' - ' : '') + type;
+
+            document.getElementById('file-name').value = name;
+        }
+
+        // Original functions continue below...
     </script>
 </body>
 </html>
