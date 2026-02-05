@@ -254,9 +254,14 @@
         function loadHome() {
             currentPath = [];
             updateBreadcrumb();
-            db.collection('folders').where('parentId', '==', null).get().then(snapshot => {
-                let html = '<div class="folders-grid">';
-                snapshot.forEach(doc => {
+            let html = '<div class="folders-grid">';
+            let hasContent = false;
+
+            // Load root folders
+            db.collection('folders').where('parentId', '==', null).get().then(folders => {
+                console.log('Root folders:', folders.size);
+                folders.forEach(doc => {
+                    hasContent = true;
                     const folder = doc.data();
                     const isFav = (currentUser.folderFavorites || []).includes(doc.id);
                     html += `<div class="folder-card" onclick="openFolder('${doc.id}', '${folder.name}')">
@@ -265,8 +270,30 @@
                         <div class="folder-name">${folder.name}</div>
                     </div>`;
                 });
+
+                // Load root files (where folderId is null)
+                return db.collection('files').where('folderId', '==', null).get();
+            }).then(files => {
+                console.log('Root files:', files.size);
+                files.forEach(doc => {
+                    hasContent = true;
+                    const file = doc.data();
+                    console.log('Root file:', file.name, file.url);
+                    const icon = file.name.endsWith('.pdf') ? '📄' : file.name.endsWith('.ppt') ? '📊' : '📝';
+                    html += `<div class="file-card" onclick="viewFile('${file.url}', '${file.name}')">
+                        <div class="folder-icon">${icon}</div>
+                        <h4>${file.name}</h4>
+                        <p>${(file.size/1024).toFixed(1)} KB</p>
+                    </div>`;
+                });
+
+                if (!hasContent) {
+                    html += '<p style="grid-column: 1/-1; text-align: center;">No content yet</p>';
+                }
                 html += '</div>';
                 document.getElementById('browse-content').innerHTML = html;
+            }).catch(err => {
+                console.error('Error loading home:', err);
             });
         }
 
@@ -279,14 +306,16 @@
             updateBreadcrumb();
             const current = currentPath[currentPath.length - 1];
 
-            Promise.all([
-                db.collection('folders').where('parentId', '==', current.id).get(),
-                db.collection('quizzes').where('folderId', '==', current.id).get(),
-                db.collection('files').where('folderId', '==', current.id).get()
-            ]).then(([folders, quizzes, files]) => {
-                let html = '<div class="folders-grid">';
+            console.log('Loading folder ID:', current.id);
 
+            let html = '<div class="folders-grid">';
+            let hasContent = false;
+
+            // Load folders
+            db.collection('folders').where('parentId', '==', current.id).get().then(folders => {
+                console.log('Folders found:', folders.size);
                 folders.forEach(doc => {
+                    hasContent = true;
                     const folder = doc.data();
                     const isFav = (currentUser.folderFavorites || []).includes(doc.id);
                     html += `<div class="folder-card" onclick="openFolder('${doc.id}', '${folder.name}')">
@@ -296,7 +325,12 @@
                     </div>`;
                 });
 
+                // Load quizzes
+                return db.collection('quizzes').where('folderId', '==', current.id).get();
+            }).then(quizzes => {
+                console.log('Quizzes found:', quizzes.size);
                 quizzes.forEach(doc => {
+                    hasContent = true;
                     const quiz = doc.data();
                     const isFav = (currentUser.favorites || []).includes(doc.id);
                     html += `<div class="quiz-card" onclick="startQuiz('${doc.id}', '${quiz.title}')">
@@ -306,8 +340,26 @@
                     </div>`;
                 });
 
+                // Load files
+                console.log('Querying files with folderId:', current.id);
+                return db.collection('files').where('folderId', '==', current.id).get();
+            }).then(files => {
+                console.log('Files found:', files.size);
+                if (files.size === 0) {
+                    console.log('No files found for folderId:', current.id);
+                    // Let's check all files to see what folderIds exist
+                    db.collection('files').get().then(allFiles => {
+                        console.log('All files in database:', allFiles.size);
+                        allFiles.forEach(doc => {
+                            const f = doc.data();
+                            console.log('File:', f.name, 'folderId:', f.folderId, 'Expected:', current.id);
+                        });
+                    });
+                }
                 files.forEach(doc => {
+                    hasContent = true;
                     const file = doc.data();
+                    console.log('File:', file.name, 'URL:', file.url);
                     const icon = file.name.endsWith('.pdf') ? '📄' : file.name.endsWith('.ppt') ? '📊' : '📝';
                     html += `<div class="file-card" onclick="viewFile('${file.url}', '${file.name}')">
                         <div class="folder-icon">${icon}</div>
@@ -316,11 +368,14 @@
                     </div>`;
                 });
 
-                if (folders.empty && quizzes.empty && files.empty) {
+                if (!hasContent) {
                     html += '<p style="grid-column: 1/-1; text-align: center;">This folder is empty</p>';
                 }
                 html += '</div>';
                 document.getElementById('browse-content').innerHTML = html;
+            }).catch(err => {
+                console.error('Error loading folder:', err);
+                document.getElementById('browse-content').innerHTML = '<p style="text-align: center; color: red;">Error loading content</p>';
             });
         }
 
