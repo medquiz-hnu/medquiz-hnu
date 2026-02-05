@@ -6,8 +6,6 @@
     <title>Admin - MedQuiz HNU</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <!-- Removed Firebase Storage -->
-    <!-- Added Cloudinary Upload Widget -->
     <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -61,6 +59,7 @@
         .login-screen { max-width: 500px; margin: 100px auto; }
         #upload-progress { margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; display: none; }
     </style>
+<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -186,7 +185,6 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        // Removed: const storage = firebase.storage();
 
         const ADMIN_PASS = 'jana';
         let currentPath = [];
@@ -195,7 +193,7 @@
         let editingFolderId = null;
 
         // Cloudinary Configuration
-        const CLOUDINARY_CLOUD_NAME = 'drv33iia22';
+        const CLOUDINARY_CLOUD_NAME = 'dtr331m22';
         const CLOUDINARY_UPLOAD_PRESET = 'medquiz_unsigned';
 
         window.onload = function() {
@@ -470,40 +468,37 @@
             });
         }
 
-        // CLOUDINARY FILE UPLOAD - REPLACES FIREBASE STORAGE
+        // CLOUDINARY FILE UPLOAD
         function openCloudinaryUpload() {
             const folderId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
-            
+
+            // Check if cloudinary is loaded
+            if (typeof cloudinary === 'undefined') {
+                alert('Cloudinary widget not loaded. Please refresh the page.');
+                return;
+            }
+
             const widget = cloudinary.createUploadWidget({
                 cloudName: CLOUDINARY_CLOUD_NAME,
                 uploadPreset: CLOUDINARY_UPLOAD_PRESET,
-                sources: ['local', 'url', 'camera'],
+                sources: ['local', 'url'],
                 multiple: false,
                 maxFiles: 1,
                 resourceType: 'auto',
                 clientAllowedFormats: ['pdf', 'ppt', 'pptx', 'doc', 'docx', 'txt'],
-                maxFileSize: 10000000, // 10MB
+                maxFileSize: 10000000,
                 showPoweredBy: false,
-                language: 'en',
-                text: {
-                    en: {
-                        queue: {
-                            title: 'Uploading file...',
-                            title_uploading: 'Uploading...'
-                        }
-                    }
-                }
+                language: 'en'
             }, (error, result) => {
                 if (error) {
                     console.error('Cloudinary upload error:', error);
-                    alert('Upload failed: ' + error.message);
+                    alert('Upload failed: ' + (error.message || error.statusText || 'Unknown error'));
                     return;
                 }
-                
+
                 if (result && result.event === 'success') {
                     console.log('Upload successful:', result.info);
-                    
-                    // Save to Firestore
+
                     const fileData = {
                         name: result.info.original_filename + (result.info.format ? '.' + result.info.format : ''),
                         type: result.info.resource_type + '/' + (result.info.format || 'unknown'),
@@ -513,7 +508,7 @@
                         folderId: folderId,
                         uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
-                    
+
                     db.collection('files').add(fileData).then((docRef) => {
                         console.log('File saved to Firestore:', docRef.id);
                         loadFolderContent(folderId);
@@ -525,19 +520,13 @@
                     });
                 }
             });
-            
+
             widget.open();
         }
 
         function deleteFile(id, publicId) {
             if (!confirm('Delete file?')) return;
-            
-            // Delete from Firestore
             db.collection('files').doc(id).delete().then(() => {
-                // Note: For unsigned uploads, we can't delete from Cloudinary via API
-                // The file will remain in Cloudinary but won't show in the app
-                // If you need to delete from Cloudinary, you'll need a server-side function
-                
                 const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
                 loadFolderContent(parentId);
                 loadStats();
