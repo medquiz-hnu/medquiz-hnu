@@ -203,6 +203,7 @@
                         createdAt: new Date(),
                         favorites: [],
                         folderFavorites: [],
+                        fileFavorites: [],
                         history: []
                     }).then(() => {
                         alert('Account created! Please login.');
@@ -333,7 +334,7 @@
                     hasContent = true;
                     const quiz = doc.data();
                     const isFav = (currentUser.favorites || []).includes(doc.id);
-                    html += `<div class="quiz-card" onclick="startQuiz('${doc.id}', '${quiz.title}')">
+                    html += `<div class="quiz-card" onclick="showExamModeSelection('${doc.id}', '${quiz.title}')">
                         <button class="favorite-btn" onclick="event.stopPropagation(); toggleQuizFav('${doc.id}')">${isFav ? '⭐' : '☆'}</button>
                         <h3>📝 ${quiz.title}</h3>
                         <p>${quiz.questionCount || 0} questions</p>
@@ -345,26 +346,18 @@
                 return db.collection('files').where('folderId', '==', current.id).get();
             }).then(files => {
                 console.log('Files found:', files.size);
-                if (files.size === 0) {
-                    console.log('No files found for folderId:', current.id);
-                    // Let's check all files to see what folderIds exist
-                    db.collection('files').get().then(allFiles => {
-                        console.log('All files in database:', allFiles.size);
-                        allFiles.forEach(doc => {
-                            const f = doc.data();
-                            console.log('File:', f.name, 'folderId:', f.folderId, 'Expected:', current.id);
-                        });
-                    });
-                }
                 files.forEach(doc => {
                     hasContent = true;
                     const file = doc.data();
-                    console.log('File:', file.name, 'URL:', file.url);
+                    const isFileFav = (currentUser.fileFavorites || []).includes(doc.id);
                     const icon = file.name.endsWith('.pdf') ? '📄' : file.name.endsWith('.ppt') ? '📊' : '📝';
-                    html += `<div class="file-card" onclick="viewFile('${file.url}', '${file.name}')">
-                        <div class="folder-icon">${icon}</div>
-                        <h4>${file.name}</h4>
-                        <p>${(file.size/1024).toFixed(1)} KB</p>
+                    html += `<div class="file-card">
+                        <button class="favorite-btn" onclick="event.stopPropagation(); toggleFileFav('${doc.id}')">${isFileFav ? '⭐' : '☆'}</button>
+                        <div class="file-card-content" onclick="viewFile('${file.url}', '${file.name}')">
+                            <div class="folder-icon">${icon}</div>
+                            <h4>${file.name}</h4>
+                            <p>${file.size ? (file.size/1024).toFixed(1) + ' KB' : 'Google Drive'}</p>
+                        </div>
                     </div>`;
                 });
 
@@ -399,6 +392,7 @@
             document.getElementById('quiz-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.add('hidden');
             clearInterval(timerInterval);
+            document.getElementById('timer').style.display = 'block';
             loadHome();
         }
 
@@ -425,18 +419,40 @@
             loadCurrentFolder();
         }
 
+        function toggleFileFav(fileId) {
+            console.log('Toggling file fav:', fileId);
+            let favs = currentUser.fileFavorites || [];
+            console.log('Current favs:', favs);
+            const idx = favs.indexOf(fileId);
+            if (idx > -1) {
+                favs.splice(idx, 1);
+                console.log('Removed from favs');
+            } else {
+                favs.push(fileId);
+                console.log('Added to favs');
+            }
+            currentUser.fileFavorites = favs;
+            localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+            db.collection('users').doc(currentUser.id).update({ fileFavorites: favs })
+                .then(() => console.log('Saved to Firestore'))
+                .catch(err => console.error('Error saving:', err));
+            if (currentPath.length === 0) loadHome();
+            else loadCurrentFolder();
+        }
+
         function loadFavorites() {
             const quizFavs = currentUser.favorites || [];
             const folderFavs = currentUser.folderFavorites || [];
+            const fileFavs = currentUser.fileFavorites || [];
 
-            if (quizFavs.length === 0 && folderFavs.length === 0) {
+            if (quizFavs.length === 0 && folderFavs.length === 0 && fileFavs.length === 0) {
                 document.getElementById('favorites-content').innerHTML = '<p>No favorites</p>';
                 return;
             }
 
             let html = '<div class="folders-grid">';
             let count = 0;
-            const total = quizFavs.length + folderFavs.length;
+            const total = quizFavs.length + folderFavs.length + fileFavs.length;
 
             folderFavs.forEach(fid => {
                 db.collection('folders').doc(fid).get().then(doc => {
@@ -457,10 +473,29 @@
                 db.collection('quizzes').doc(qid).get().then(doc => {
                     if (doc.exists) {
                         const q = doc.data();
-                        html += `<div class="quiz-card" onclick="startQuiz('${qid}', '${q.title}')">
+                        html += `<div class="quiz-card" onclick="showExamModeSelection('${qid}', '${q.title}')">
                             <h3>📝 ${q.title}</h3>
                             <p>${q.questionCount || 0} questions</p>
                             <button class="favorite-btn" onclick="event.stopPropagation(); toggleQuizFav('${qid}')">⭐</button>
+                        </div>`;
+                    }
+                    count++;
+                    if (count === total) finishFavHtml(html);
+                });
+            });
+
+            fileFavs.forEach(fid => {
+                db.collection('files').doc(fid).get().then(doc => {
+                    if (doc.exists) {
+                        const f = doc.data();
+                        const icon = f.name.endsWith('.pdf') ? '📄' : f.name.endsWith('.ppt') ? '📊' : '📝';
+                        html += `<div class="file-card" style="background: #fff9c4;">
+                            <button class="favorite-btn" onclick="event.stopPropagation(); toggleFileFav('${fid}')">⭐</button>
+                            <div class="file-card-content" onclick="viewFile('${f.url}', '${f.name}')">
+                                <div class="folder-icon">${icon}</div>
+                                <h4>${f.name}</h4>
+                                <p>${f.size ? (f.size/1024).toFixed(1) + ' KB' : 'Google Drive'}</p>
+                            </div>
                         </div>`;
                     }
                     count++;
@@ -481,7 +516,101 @@
         }
 
         function viewFile(url, name) {
+            console.log('Opening file:', name, 'URL:', url);
+            if (!url) {
+                alert('File URL not available');
+                return;
+            }
             window.open(url, '_blank');
+        }
+
+        // Exam mode selection
+        let examMode = 'untimed'; // 'untimed' or 'timed'
+        let examDuration = 30; // minutes
+
+        function showExamModeSelection(quizId, title) {
+            console.log('Showing exam mode selection for:', title);
+            currentQuizId = quizId;
+            currentQuizTitle = title;
+
+            // Create modal for exam mode selection
+            let modalHtml = `
+                <div id="exam-mode-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; justify-content: center; align-items: center;">
+                    <div style="background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">📝 ${title}</h2>
+                        <p style="margin-bottom: 30px; color: #666;">Choose exam mode:</p>
+
+                        <button onclick="console.log('Clicked untimed'); selectExamMode('untimed', ${quizId}, '${title}')" style="display: block; width: 100%; padding: 20px; margin: 10px 0; border: 2px solid #667eea; border-radius: 15px; background: white; cursor: pointer; font-size: 1.1em; transition: all 0.3s;">
+                            <div style="font-size: 2em; margin-bottom: 10px;">⏱️</div>
+                            <strong>No Time Limit</strong>
+                            <div style="color: #666; font-size: 0.9em;">Take your time</div>
+                        </button>
+
+                        <button onclick="console.log('Clicked timed'); showTimeSelection(${quizId}, '${title}')" style="display: block; width: 100%; padding: 20px; margin: 10px 0; border: 2px solid #764ba2; border-radius: 15px; background: white; cursor: pointer; font-size: 1.1em; transition: all 0.3s;">
+                            <div style="font-size: 2em; margin-bottom: 10px;">⏰</div>
+                            <strong>Timed Exam</strong>
+                            <div style="color: #666; font-size: 0.9em;">Set your own time limit</div>
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function showTimeSelection(quizId, title) {
+            document.getElementById('exam-mode-modal').remove();
+
+            let timeModal = `
+                <div id="time-selection-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; justify-content: center; align-items: center;">
+                    <div style="background: white; border-radius: 20px; padding: 40px; max-width: 400px; width: 90%; text-align: center;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">⏰ Set Time Limit</h2>
+
+                        <div style="margin: 30px 0;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: bold;">Duration (minutes):</label>
+                            <select id="exam-duration" style="width: 100%; padding: 15px; border: 2px solid #667eea; border-radius: 10px; font-size: 1.2em;">
+                                <option value="5">5 minutes</option>
+                                <option value="10">10 minutes</option>
+                                <option value="15">15 minutes</option>
+                                <option value="20">20 minutes</option>
+                                <option value="30" selected>30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60">1 hour</option>
+                                <option value="90">1.5 hours</option>
+                                <option value="120">2 hours</option>
+                            </select>
+                        </div>
+
+                        <button onclick="selectExamMode('timed', ${quizId}, '${title}')" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 25px; font-size: 1.1em; cursor: pointer; margin-top: 10px;">
+                            Start Exam
+                        </button>
+
+                        <button onclick="document.getElementById('time-selection-modal').remove(); showExamModeSelection(${quizId}, '${title}')" style="width: 100%; padding: 15px; background: #eee; color: #333; border: none; border-radius: 25px; font-size: 1em; cursor: pointer; margin-top: 10px;">
+                            Back
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', timeModal);
+        }
+
+        function selectExamMode(mode, quizId, title) {
+            console.log('Selected exam mode:', mode);
+            examMode = mode;
+            if (mode === 'timed') {
+                const durationSelect = document.getElementById('exam-duration');
+                if (durationSelect) {
+                    examDuration = parseInt(durationSelect.value);
+                }
+            }
+
+            // Remove modals
+            const modal1 = document.getElementById('exam-mode-modal');
+            const modal2 = document.getElementById('time-selection-modal');
+            if (modal1) modal1.remove();
+            if (modal2) modal2.remove();
+
+            // Start the quiz
+            startQuiz(quizId, title);
         }
 
         function startQuiz(quizId, title) {
@@ -494,12 +623,19 @@
                 currentQuestions.sort(() => Math.random() - 0.5);
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('quiz-screen').classList.remove('hidden');
-                document.getElementById('quiz-title').textContent = title;
+                document.getElementById('quiz-title').textContent = title + (examMode === 'timed' ? ` (${examDuration} min)` : ' (No Time Limit)');
                 currentQuestionIndex = 0;
                 userAnswers = {};
                 correctCount = 0;
                 quizMistakes = [];
-                startTimer();
+
+                if (examMode === 'timed') {
+                    startTimer(examDuration * 60);
+                } else {
+                    // Hide timer for untimed exam
+                    document.getElementById('timer').style.display = 'none';
+                }
+
                 showQuestion(0);
             });
         }
@@ -551,13 +687,18 @@
             showQuestion(qIdx);
         }
 
-        function startTimer() {
-            timeRemaining = 1800;
+        function startTimer(durationSeconds) {
+            timeRemaining = durationSeconds || 1800;
+            document.getElementById('timer').style.display = 'block';
             updateTimer();
             timerInterval = setInterval(() => {
                 timeRemaining--;
                 updateTimer();
-                if (timeRemaining <= 0) finishQuiz();
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    alert('Time is up!');
+                    finishQuiz();
+                }
             }, 1000);
         }
 
