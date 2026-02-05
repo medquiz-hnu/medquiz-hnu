@@ -6,7 +6,9 @@
     <title>Admin - MedQuiz HNU</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <!-- Removed Firebase Storage -->
+    <!-- Added Cloudinary Upload Widget -->
+    <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
@@ -101,7 +103,7 @@
             <div class="action-buttons">
                 <button class="btn btn-primary" onclick="openModal('folder-modal')">📁 New Folder</button>
                 <button class="btn btn-success" onclick="openModal('quiz-modal')">📝 New Quiz</button>
-                <button class="btn btn-warning" onclick="openModal('file-modal')">📎 Upload File</button>
+                <button class="btn btn-warning" onclick="openCloudinaryUpload()">📎 Upload File</button>
             </div>
             <div id="content-area"></div>
         </div>
@@ -151,22 +153,6 @@
         </div>
     </div>
 
-    <!-- File Modal -->
-    <div id="file-modal" class="modal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="closeModal('file-modal')">&times;</button>
-            <h2>Upload File</h2>
-            <p style="color: #666;">Location: <span id="file-loc">Home</span></p>
-            <div class="upload-area" onclick="document.getElementById('file-input').click()">
-                <div style="font-size: 3em;">📎</div>
-                <h3>Click to Select File</h3>
-                <p>PDF, PPT, Word, TXT</p>
-                <input type="file" id="file-input" class="file-input" accept=".pdf,.ppt,.pptx,.doc,.docx,.txt" onchange="uploadFile(this)">
-            </div>
-            <div id="upload-progress"></div>
-        </div>
-    </div>
-
     <!-- Edit Folder Modal -->
     <div id="edit-folder-modal" class="modal">
         <div class="modal-content">
@@ -200,7 +186,7 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const storage = firebase.storage();
+        // Removed: const storage = firebase.storage();
 
         const ADMIN_PASS = 'jana';
         let currentPath = [];
@@ -208,7 +194,13 @@
         let editingQuizId = null;
         let editingFolderId = null;
 
+        // Cloudinary Configuration
+        const CLOUDINARY_CLOUD_NAME = 'drv33iia22';
+        const CLOUDINARY_UPLOAD_PRESET = 'medquiz_unsigned';
+
         window.onload = function() {
+            console.log('Admin page loaded');
+            console.log('Firebase initialized:', firebase.apps.length > 0);
             if (localStorage.getItem('admin_logged_in') === 'true') showPanel();
         };
 
@@ -242,7 +234,7 @@
         function showTab(tab) {
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('#content-tab, #students-tab, #notifications-tab').forEach(t => t.classList.add('hidden'));
-            if(event) event.target.classList.add('active');
+            event.target.classList.add('active');
             document.getElementById(tab + '-tab').classList.remove('hidden');
             if (tab === 'students') loadStudents();
             if (tab === 'notifications') loadNotifications();
@@ -285,7 +277,7 @@
                     hasContent = true;
                     const f = doc.data();
                     const icon = f.name.endsWith('.pdf') ? '📄' : f.name.endsWith('.ppt') ? '📊' : '📝';
-                    html += `<div class="file-card"><button class="delete-btn" onclick="event.stopPropagation(); deleteFile('${doc.id}')">🗑️</button><div class="folder-icon">${icon}</div><div class="folder-name">${f.name}</div><div style="color: #666; font-size: 0.9em;">${(f.size/1024).toFixed(1)} KB</div></div>`;
+                    html += `<div class="file-card"><button class="delete-btn" onclick="event.stopPropagation(); deleteFile('${doc.id}', '${f.publicId || ''}')">🗑️</button><div class="folder-icon">${icon}</div><div class="folder-name">${f.name}</div><div style="color: #666; font-size: 0.9em;">${(f.size/1024).toFixed(1)} KB</div></div>`;
                 });
 
                 if (!hasContent) html += '<div class="empty-state" style="grid-column: 1/-1;"><h3>Empty</h3><p>Add folders, quizzes, or files</p></div>';
@@ -305,7 +297,6 @@
             const loc = currentPath.length > 0 ? currentPath[currentPath.length - 1].name : 'Home';
             document.getElementById('folder-loc').textContent = loc;
             document.getElementById('quiz-loc').textContent = loc;
-            document.getElementById('file-loc').textContent = loc;
         }
 
         function navigateTo(index) {
@@ -348,6 +339,9 @@
             });
             db.collection('quizzes').where('folderId', '==', id).get().then(snap => {
                 snap.forEach(d => deleteQuiz(d.id));
+            });
+            db.collection('files').where('folderId', '==', id).get().then(snap => {
+                snap.forEach(d => deleteFile(d.id, d.data().publicId));
             });
             db.collection('folders').doc(id).delete();
             setTimeout(() => {
@@ -425,7 +419,7 @@
                     snap.forEach((d, i) => {
                         const qu = d.data();
                         currentQuestions.push({ id: d.id, ...qu });
-                        html += `<div id="div-${d.id}" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 10px;"><h4>Q${i+1}</h4><input type="text" id="q-${d.id}" value="${qu.question}" style="width: 100%; margin-bottom: 10px; padding: 8px;">${qu.options.map((o, j) => `<input type="text" id="opt-${d.id}-${j}" value="${o}" style="width: 100%; margin: 5px 0; padding: 8px;">`).join('')}<label>Correct:</label><select id="cor-${d.id}">${[0,1,2,3].map(j => `<option value="${j}" ${j===qu.correctAnswer?'selected':''}>${String.fromCharCode(65+j)}</option>`).join('')}</select><input type="text" id="exp-${d.id}" value="${qu.explanation || ''}" placeholder="Explanation" style="width: 100%; margin-top: 10px; padding: 8px;"><button class="btn btn-danger" style="margin-top: 10px;" onclick="deleteQuestion('${d.id}')">Delete</button></div>`;
+                        html += `<div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 10px;"><h4>Q${i+1}</h4><input type="text" id="q-${d.id}" value="${qu.question}" style="width: 100%; margin-bottom: 10px; padding: 8px;">${qu.options.map((o, j) => `<input type="text" id="opt-${d.id}-${j}" value="${o}" style="width: 100%; margin: 5px 0; padding: 8px;">`).join('')}<label>Correct:</label><select id="cor-${d.id}">${[0,1,2,3].map(j => `<option value="${j}" ${j===qu.correctAnswer?'selected':''}>${String.fromCharCode(65+j)}</option>`).join('')}</select><input type="text" id="exp-${d.id}" value="${qu.explanation || ''}" placeholder="Explanation" style="width: 100%; margin-top: 10px; padding: 8px;"><button class="btn btn-danger" style="margin-top: 10px;" onclick="deleteQuestion('${d.id}')">Delete</button></div>`;
                     });
                     document.getElementById('edit-questions').innerHTML = html;
                     openModal('edit-quiz-modal');
@@ -452,13 +446,7 @@
             if (!title) return alert('Enter title');
             db.collection('quizzes').doc(editingQuizId).update({ title });
             currentQuestions.forEach((q, i) => {
-                const data = { 
-                    question: document.getElementById(`q-${q.id}`).value, 
-                    options: [0,1,2,3].map(j => document.getElementById(`opt-${q.id}-${j}`).value), 
-                    correctAnswer: parseInt(document.getElementById(`cor-${q.id}`).value), 
-                    explanation: document.getElementById(`exp-${q.id}`).value, 
-                    order: i 
-                };
+                const data = { question: document.getElementById(`q-${q.id}`).value, options: [0,1,2,3].map(j => document.getElementById(`opt-${q.id}-${j}`).value), correctAnswer: parseInt(document.getElementById(`cor-${q.id}`).value), explanation: document.getElementById(`exp-${q.id}`).value, order: i };
                 if (q.id.startsWith('temp_')) db.collection('quizzes').doc(editingQuizId).collection('questions').add(data);
                 else db.collection('quizzes').doc(editingQuizId).collection('questions').doc(q.id).update(data);
             });
@@ -482,69 +470,77 @@
             });
         }
 
-        // FILE UPLOAD - FIXED COMPAT MODE
-        function uploadFile(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            const progressDiv = document.getElementById('upload-progress');
-            progressDiv.style.display = 'block';
-            progressDiv.innerHTML = '<p>Uploading: 0%</p>';
-
+        // CLOUDINARY FILE UPLOAD - REPLACES FIREBASE STORAGE
+        function openCloudinaryUpload() {
             const folderId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
             
-            // Use firebase.storage().ref() for compatibility
-            const storageRef = firebase.storage().ref().child('files/' + Date.now() + '_' + file.name);
-            const uploadTask = storageRef.put(file);
-
-            uploadTask.on('state_changed', 
-                (snapshot) => {
-                    const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                    progressDiv.innerHTML = `<p>Uploading: ${progress}%</p>`;
-                }, 
-                (error) => {
-                    console.error('Upload error:', error);
-                    progressDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            const widget = cloudinary.createUploadWidget({
+                cloudName: CLOUDINARY_CLOUD_NAME,
+                uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+                sources: ['local', 'url', 'camera'],
+                multiple: false,
+                maxFiles: 1,
+                resourceType: 'auto',
+                clientAllowedFormats: ['pdf', 'ppt', 'pptx', 'doc', 'docx', 'txt'],
+                maxFileSize: 10000000, // 10MB
+                showPoweredBy: false,
+                language: 'en',
+                text: {
+                    en: {
+                        queue: {
+                            title: 'Uploading file...',
+                            title_uploading: 'Uploading...'
+                        }
+                    }
+                }
+            }, (error, result) => {
+                if (error) {
+                    console.error('Cloudinary upload error:', error);
                     alert('Upload failed: ' + error.message);
-                }, 
-                () => {
-                    uploadTask.snapshot.ref.getDownloadURL().then((url) => {
-                        return db.collection('files').add({
-                            name: file.name,
-                            type: file.type || 'application/octet-stream',
-                            size: file.size,
-                            url: url,
-                            folderId: folderId,
-                            uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }).then(() => {
-                        progressDiv.innerHTML = '<p style="color: green;">✅ Upload complete!</p>';
-                        setTimeout(() => {
-                            closeModal('file-modal');
-                            progressDiv.style.display = 'none';
-                            input.value = '';
-                            loadFolderContent(folderId);
-                            loadStats();
-                        }, 1000);
+                    return;
+                }
+                
+                if (result && result.event === 'success') {
+                    console.log('Upload successful:', result.info);
+                    
+                    // Save to Firestore
+                    const fileData = {
+                        name: result.info.original_filename + (result.info.format ? '.' + result.info.format : ''),
+                        type: result.info.resource_type + '/' + (result.info.format || 'unknown'),
+                        size: result.info.bytes,
+                        url: result.info.secure_url,
+                        publicId: result.info.public_id,
+                        folderId: folderId,
+                        uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    db.collection('files').add(fileData).then((docRef) => {
+                        console.log('File saved to Firestore:', docRef.id);
+                        loadFolderContent(folderId);
+                        loadStats();
+                        alert('File uploaded successfully!');
                     }).catch(err => {
-                        console.error('Save error:', err);
-                        progressDiv.innerHTML = `<p style="color: red;">Save failed: ${err.message}</p>`;
+                        console.error('Error saving to Firestore:', err);
+                        alert('Error saving file info: ' + err.message);
                     });
                 }
-            );
+            });
+            
+            widget.open();
         }
 
-        function deleteFile(id) {
+        function deleteFile(id, publicId) {
             if (!confirm('Delete file?')) return;
-            db.collection('files').doc(id).get().then(doc => {
-                if (doc.exists && doc.data().url) {
-                    firebase.storage().refFromURL(doc.data().url).delete().catch(e => console.log(e));
-                }
-                db.collection('files').doc(id).delete().then(() => {
-                    const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
-                    loadFolderContent(parentId);
-                    loadStats();
-                });
+            
+            // Delete from Firestore
+            db.collection('files').doc(id).delete().then(() => {
+                // Note: For unsigned uploads, we can't delete from Cloudinary via API
+                // The file will remain in Cloudinary but won't show in the app
+                // If you need to delete from Cloudinary, you'll need a server-side function
+                
+                const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
+                loadFolderContent(parentId);
+                loadStats();
             });
         }
 
