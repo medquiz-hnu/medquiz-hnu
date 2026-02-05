@@ -3,169 +3,703 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedQuiz HNU - Admin Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-storage-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Admin Panel - MedQuiz HNU</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * { font-family: 'Inter', sans-serif; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 20px;
         }
-        
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        
-        .dark-mode {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
-        
-        .dark-mode .glass-card {
-            background: rgba(30, 30, 46, 0.95);
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: #eee;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-        
+
+        .folders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .folder-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .folder-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .folder-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .edit-btn, .delete-btn, .select-btn {
+            position: absolute;
+            top: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+        }
+
+        .edit-btn {
+            right: 40px;
+            color: #667eea;
+        }
+
+        .delete-btn {
+            right: 10px;
+            color: #f44336;
+        }
+
+        .select-btn {
+            left: 10px;
+            color: #4caf50;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: all 0.3s ease;
+            color: white;
         }
-        
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
         }
-        
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
         }
-        
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 20px;
+
+        .btn-secondary {
+            background: #eee;
+            color: #333;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            background: #e3f2fd;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e3f2fd;
+            border-color: #4caf50;
+            transform: scale(1.02);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .paste-area {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .preview-section {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .question-preview {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-right: 4px solid #667eea;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .progress-bar {
+            width: 100%;
             height: 20px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
         }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
         }
-        
-        .hidden { display: none !important; }
-        
-        .fade-in {
-            animation: fadeIn 0.3s ease-in;
+
+        .notification-form {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        .file-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            margin-bottom: 20px;
+        }
+
+        .bulk-actions {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .bulk-actions.active {
+            display: block;
+        }
+
+        .selected-item {
+            border: 3px solid #4caf50 !important;
+        }
+
+        .login-screen {
+            max-width: 500px;
+            margin: 100px auto;
+        }
+
+        .breadcrumb {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .student-analytics {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .import-export-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .import-export-area {
+                grid-template-columns: 1fr;
+            }
+
+            .folders-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
+<base target="_blank">
 </head>
 <body>
     <!-- Login Screen -->
-    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
-        <div class="glass-card p-8 w-full max-w-md">
-            <div class="text-center mb-8">
-                <i class="fas fa-user-shield text-6xl text-indigo-600 mb-4"></i>
-                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Admin Portal</h1>
-                <p class="text-gray-600 mt-2">MedQuiz HNU Management</p>
+    <div id="login-screen" class="container">
+        <div class="section login-screen">
+            <div class="header">
+                <h1>⚙️ Admin Panel</h1>
+                <p>MedQuiz HNU Administration</p>
             </div>
-            
-            <form id="loginForm" onsubmit="event.preventDefault(); adminLogin();" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Admin Password</label>
-                    <input 
-                        type="password" 
-                        id="adminPassword" 
-                        placeholder="Enter password" 
-                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-lg text-center tracking-widest"
-                        autocomplete="off"
-                    >
-                </div>
-                
-                <button 
-                    type="submit" 
-                    id="loginBtn"
-                    class="w-full py-3 rounded-lg btn-primary text-white font-semibold flex items-center justify-center gap-2"
-                >
-                    <span id="btnText"><i class="fas fa-lock"></i> Login</span>
-                </button>
-                
-                <div id="loginError" class="text-red-500 text-center hidden bg-red-50 p-3 rounded-lg text-sm"></div>
-            </form>
 
-            <p class="text-center text-xs text-gray-400 mt-4">Default password: jana</p>
+            <div class="form-group">
+                <label>Admin Password</label>
+                <input type="password" id="admin-password" placeholder="Enter admin password">
+            </div>
+            <button class="btn btn-primary" onclick="adminLogin()" style="width: 100%;">Login</button>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="index.html" class="btn btn-secondary">🏠 Back to Student View</a>
+            </div>
         </div>
     </div>
 
-    <!-- Admin Dashboard -->
-    <div id="adminDashboard" class="hidden">
-        <div class="p-6">
-            <div class="glass-card p-6 mb-6 flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <i class="fas fa-user-shield text-3xl text-indigo-600"></i>
-                    <div>
-                        <h1 class="text-2xl font-bold">Admin Dashboard</h1>
-                        <p class="text-sm text-gray-600">MedQuiz HNU</p>
+    <!-- Main Admin Panel -->
+    <div id="admin-panel" class="container hidden">
+        <!-- Header -->
+        <div class="header">
+            <h1>⚙️ Admin Panel - MedQuiz HNU</h1>
+            <p>Manage Content, Students, and Analytics</p>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                <a href="index.html" class="btn btn-secondary">🏠 Student View</a>
+            </div>
+        </div>
+
+        <!-- Stats Dashboard -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="total-students">0</div>
+                <div class="stat-label">Total Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-quizzes">0</div>
+                <div class="stat-label">Total Quizzes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-questions">0</div>
+                <div class="stat-label">Total Questions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="active-today">0</div>
+                <div class="stat-label">Active Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-files">0</div>
+                <div class="stat-label">Files Uploaded</div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('content')">📁 Content</button>
+            <button class="nav-tab" onclick="showTab('students')">👥 Students</button>
+            <button class="nav-tab" onclick="showTab('notifications')">🔔 Notifications</button>
+            <button class="nav-tab" onclick="showTab('files')">📎 Files</button>
+            <button class="nav-tab" onclick="showTab('import')">📥 Import/Export</button>
+        </div>
+
+        <!-- Content Tab -->
+        <div id="content-tab" class="section">
+            <div id="content-breadcrumb" class="breadcrumb">
+                <a onclick="loadContentHome()">🏠 Root</a>
+            </div>
+
+            <div class="bulk-actions" id="bulk-actions">
+                <strong>Bulk Actions:</strong>
+                <button class="btn btn-danger btn-small" onclick="deleteSelected()">🗑️ Delete Selected</button>
+                <button class="btn btn-secondary btn-small" onclick="clearSelection()">Clear Selection</button>
+                <span id="selected-count" style="margin-left: 10px;">0 selected</span>
+            </div>
+
+            <div class="add-buttons" style="margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="openModal('folder-modal')">📁 Add Folder</button>
+                <button class="btn btn-success" onclick="openModal('quiz-modal')">📝 Add Quiz</button>
+                <button class="btn btn-secondary" onclick="toggleBulkMode()">☑️ Select Mode</button>
+            </div>
+
+            <div id="content-area"></div>
+        </div>
+
+        <!-- Students Tab -->
+        <div id="students-tab" class="section hidden">
+            <h2>Student Analytics</h2>
+            <input type="text" class="search-box" id="student-search" placeholder="🔍 Search students..." onkeyup="searchStudents()">
+            <div id="students-list"></div>
+        </div>
+
+        <!-- Notifications Tab -->
+        <div id="notifications-tab" class="section hidden">
+            <h2>Send Notification</h2>
+            <div class="notification-form">
+                <div class="form-group">
+                    <label>Message</label>
+                    <input type="text" id="notif-message" placeholder="Enter notification message">
+                </div>
+                <div class="form-group">
+                    <label>Target</label>
+                    <select id="notif-target">
+                        <option value="">All Students</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Duration</label>
+                    <select id="notif-duration">
+                        <option value="1">1 Day</option>
+                        <option value="3">3 Days</option>
+                        <option value="7">1 Week</option>
+                        <option value="30">1 Month</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="sendNotification()">Send Notification</button>
+            </div>
+
+            <h3>Active Notifications</h3>
+            <div id="active-notifications"></div>
+        </div>
+
+        <!-- Files Tab -->
+        <div id="files-tab" class="section hidden">
+            <h2>File Manager</h2>
+            <div class="upload-area" id="file-drop-zone" onclick="document.getElementById('file-upload').click()">
+                <div style="font-size: 3em;">📎</div>
+                <h3>Upload PDF, PPT, Word</h3>
+                <p>Click or Drag & Drop files here</p>
+                <input type="file" id="file-upload" class="file-input" accept=".pdf,.ppt,.pptx,.doc,.docx" multiple onchange="handleFileUpload(event)">
+            </div>
+            <div id="files-list"></div>
+        </div>
+
+        <!-- Import/Export Tab -->
+        <div id="import-tab" class="section hidden">
+            <h2>Import/Export Quizzes</h2>
+
+            <div class="import-export-area">
+                <div style="background: #e8f5e9; padding: 20px; border-radius: 10px;">
+                    <h3>📥 Import Quiz</h3>
+                    <p>Upload JSON file with quiz data</p>
+                    <input type="file" id="import-file" accept=".json" onchange="importQuiz(event)">
+                    <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                        Format: {"title": "Quiz Name", "questions": [{"question": "...", "options": [...], "correctAnswer": 0, "explanation": "..."}]}
                     </div>
                 </div>
-                <div class="flex gap-3">
-                    <button onclick="toggleDarkMode()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">
-                        <i class="fas fa-moon dark:hidden"></i>
-                        <i class="fas fa-sun hidden dark:inline"></i>
-                    </button>
-                    <button onclick="adminLogout()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                    </button>
+
+                <div style="background: #e3f2fd; padding: 20px; border-radius: 10px;">
+                    <h3>📤 Export Quiz</h3>
+                    <p>Select quiz to export</p>
+                    <select id="export-quiz-select">
+                        <option value="">Select Quiz...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="exportQuiz()" style="margin-top: 10px;">Export</button>
                 </div>
             </div>
 
-            <!-- Navigation Tabs -->
-            <div class="glass-card p-2 mb-6 overflow-x-auto">
-                <div class="flex gap-2 min-w-max">
-                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 font-medium">
-                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                    </button>
-                    <button onclick="switchTab('folders')" id="nav-folders" class="px-4 py-2 rounded-lg hover:bg-gray-100 text-gray-600">
-                        <i class="fas fa-folder mr-2"></i>Folders
-                    </button>
-                    <button onclick="switchTab('quizzes')" id="nav-quizzes" class="px-4 py-2 rounded-lg hover:bg-gray-100 text-gray-600">
-                        <i class="fas fa-question-circle mr-2"></i>Quizzes
-                    </button>
-                    <button onclick="switchTab('students')" id="nav-students" class="px-4 py-2 rounded-lg hover:bg-gray-100 text-gray-600">
-                        <i class="fas fa-users mr-2"></i>Students
-                    </button>
-                    <button onclick="switchTab('files')" id="nav-files" class="px-4 py-2 rounded-lg hover:bg-gray-100 text-gray-600">
-                        <i class="fas fa-file mr-2"></i>Files
-                    </button>
+            <div id="import-preview" class="hidden">
+                <h3>Preview</h3>
+                <div id="import-preview-content"></div>
+                <button class="btn btn-success" onclick="confirmImport()">Confirm Import</button>
+                <button class="btn btn-secondary" onclick="cancelImport()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Folder Modal -->
+    <div id="folder-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('folder-modal')">&times;</button>
+            <h2>Add New Folder</h2>
+            <div class="form-group">
+                <label>Folder Name</label>
+                <input type="text" id="folder-name" placeholder="e.g., Year 1, Semester 1">
+            </div>
+            <button class="btn btn-primary" onclick="createFolder()">Create Folder</button>
+        </div>
+    </div>
+
+    <!-- Edit Folder Modal -->
+    <div id="edit-folder-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('edit-folder-modal')">&times;</button>
+            <h2>Edit Folder</h2>
+            <div class="form-group">
+                <label>New Name</label>
+                <input type="text" id="edit-folder-name">
+            </div>
+            <button class="btn btn-primary" onclick="updateFolder()">Update</button>
+        </div>
+    </div>
+
+    <!-- Quiz Modal -->
+    <div id="quiz-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('quiz-modal')">&times;</button>
+            <h2>Add New Quiz</h2>
+
+            <div class="form-group">
+                <label>Quiz Title</label>
+                <input type="text" id="quiz-title" placeholder="e.g., Quiz 1: Cell Biology">
+            </div>
+
+            <div class="nav-tabs" style="margin: 20px 0;">
+                <button class="nav-tab active" onclick="showQuizTab('upload')">📁 Upload File</button>
+                <button class="nav-tab" onclick="showQuizTab('paste')">📝 Paste Text</button>
+            </div>
+
+            <div id="quiz-upload-tab">
+                <div class="upload-area" onclick="document.getElementById('quiz-file').click()">
+                    <div style="font-size: 2em;">📄</div>
+                    <p>Click to upload .txt file</p>
+                    <input type="file" id="quiz-file" class="file-input" accept=".txt" onchange="handleQuizFile(event)">
                 </div>
             </div>
 
-            <!-- Content Area -->
-            <div id="contentArea" class="glass-card p-6 min-h-[400px]">
-                <!-- Dynamic content -->
+            <div id="quiz-paste-tab" class="hidden">
+                <textarea class="paste-area" id="quiz-paste" placeholder="Paste questions here...
+
+Format:
+Question: What is...?
+A) Option 1
+B) Option 2
+C) Option 3
+D) Option 4
+Correct: B
+Explanation: Because..."></textarea>
+                <button class="btn btn-primary" onclick="parsePastedText()">Parse Questions</button>
             </div>
+
+            <div id="quiz-preview" class="preview-section hidden">
+                <h3>Preview (<span id="preview-count">0</span> questions)</h3>
+                <div id="preview-list"></div>
+                <button class="btn btn-success" onclick="saveQuiz()">Save Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Quiz Modal -->
+    <div id="edit-quiz-modal" class="modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <button class="close-btn" onclick="closeModal('edit-quiz-modal')">&times;</button>
+            <h2>Edit Quiz</h2>
+            <div class="form-group">
+                <label>Quiz Title</label>
+                <input type="text" id="edit-quiz-title">
+            </div>
+            <div id="edit-questions-list"></div>
+            <button class="btn btn-primary" onclick="addQuestionField()">+ Add Question</button>
+            <button class="btn btn-success" onclick="updateQuiz()">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- Student Details Modal -->
+    <div id="student-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <button class="close-btn" onclick="closeModal('student-modal')">&times;</button>
+            <h2>Student Details</h2>
+            <div id="student-details"></div>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyB001YxSS9iQ6PArK1VHf0lIlpLyP1Rqew",
             authDomain: "medquiz-hnu.firebaseapp.com",
@@ -176,432 +710,973 @@
             measurementId: "G-4T9XPB89N7"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const storage = firebase.storage();
 
-        let currentTab = 'dashboard';
-        let allFolders = {};
+        const ADMIN_PASSWORD = 'jana';
+        let currentPath = [];
+        let currentQuestions = [];
+        let editingQuizId = null;
+        let editingFolderId = null;
+        let bulkMode = false;
+        let selectedItems = new Set();
+        let importData = null;
 
-        // ==================== LOGIN ====================
+        // Initialize
+        window.onload = function() {
+            // Check if already logged in
+            if (localStorage.getItem('admin_logged_in') === 'true') {
+                showAdminPanel();
+            }
+
+            setupDragAndDrop();
+        };
 
         function adminLogin() {
-            const password = document.getElementById('adminPassword').value;
-            const btn = document.getElementById('loginBtn');
-            const btnText = document.getElementById('btnText');
-            const errorDiv = document.getElementById('loginError');
-            
-            errorDiv.classList.add('hidden');
-            
-            if (!password) {
-                showError('Please enter password');
-                return;
+            const password = document.getElementById('admin-password').value;
+            if (password === ADMIN_PASSWORD) {
+                localStorage.setItem('admin_logged_in', 'true');
+                showAdminPanel();
+            } else {
+                alert('Incorrect password!');
             }
-            
-            // Show loading
-            btn.disabled = true;
-            btnText.innerHTML = '<span class="loading-spinner mr-2"></span> Checking...';
-            
-            // Simulate check (instant)
-            setTimeout(() => {
-                if (password === 'jana') {
-                    document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('adminDashboard').classList.remove('hidden');
-                    loadDashboard();
-                } else {
-                    showError('Wrong password! Try: jana');
-                    btn.disabled = false;
-                    btnText.innerHTML = '<i class="fas fa-lock"></i> Login';
-                    document.getElementById('adminPassword').value = '';
-                    document.getElementById('adminPassword').focus();
-                }
-            }, 500);
         }
 
-        function showError(msg) {
-            const errorDiv = document.getElementById('loginError');
-            errorDiv.textContent = msg;
-            errorDiv.classList.remove('hidden');
+        function logout() {
+            localStorage.removeItem('admin_logged_in');
+            location.reload();
         }
 
-        function adminLogout() {
-            document.getElementById('adminDashboard').classList.add('hidden');
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('adminPassword').value = '';
-            document.getElementById('loginError').classList.add('hidden');
+        function showAdminPanel() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
+            loadStats();
+            loadContentHome();
+            loadStudents();
+            loadNotifications();
+            loadFiles();
+            loadExportQuizzes();
         }
 
-        // ==================== NAVIGATION ====================
-
-        function switchTab(tab) {
-            currentTab = tab;
-            
-            // Update nav buttons
-            document.querySelectorAll('[id^="nav-"]').forEach(btn => {
-                btn.className = 'px-4 py-2 rounded-lg hover:bg-gray-100 text-gray-600';
+        // Stats
+        function loadStats() {
+            db.collection('users').get().then(snap => {
+                document.getElementById('total-students').textContent = snap.size;
             });
-            document.getElementById(`nav-${tab}`).className = 'px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 font-medium';
-            
-            // Load content
-            const content = document.getElementById('contentArea');
-            content.innerHTML = '<div class="flex justify-center items-center h-64"><div class="loading-spinner mr-2"></div>Loading...</div>';
-            
-            if (tab === 'dashboard') loadDashboard();
-            else if (tab === 'folders') loadFolders();
-            else if (tab === 'quizzes') loadQuizzes();
-            else if (tab === 'students') loadStudents();
-            else if (tab === 'files') loadFiles();
+
+            db.collection('quizzes').get().then(snap => {
+                document.getElementById('total-quizzes').textContent = snap.size;
+            });
+
+            db.collectionGroup('questions').get().then(snap => {
+                document.getElementById('total-questions').textContent = snap.size;
+            });
+
+            // Active today
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            db.collection('users').where('lastActive', '>=', today).get().then(snap => {
+                document.getElementById('active-today').textContent = snap.size;
+            });
+
+            // Total files
+            db.collection('files').get().then(snap => {
+                document.getElementById('total-files').textContent = snap.size;
+            });
         }
 
-        // ==================== DASHBOARD ====================
+        // Tab Navigation
+        function showTab(tab) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#content-tab, #students-tab, #notifications-tab, #files-tab, #import-tab').forEach(t => t.classList.add('hidden'));
 
-        async function loadDashboard() {
-            try {
-                const [studentsSnap, quizzesSnap, foldersSnap] = await Promise.all([
-                    db.collection('students').get(),
-                    db.collection('quizzes').get(),
-                    db.collection('folders').get()
-                ]);
-                
-                let totalQuestions = 0;
-                for (const quiz of quizzesSnap.docs) {
-                    const qSnap = await db.collection('quizzes').doc(quiz.id).collection('questions').get();
-                    totalQuestions += qSnap.size;
-                }
-                
-                const content = document.getElementById('contentArea');
-                content.innerHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 fade-in">
-                        <div class="glass-card p-6 text-center border-l-4 border-indigo-500">
-                            <i class="fas fa-users text-4xl text-indigo-600 mb-2"></i>
-                            <h3 class="text-3xl font-bold">${studentsSnap.size}</h3>
-                            <p class="text-gray-600">Students</p>
-                        </div>
-                        <div class="glass-card p-6 text-center border-l-4 border-green-500">
-                            <i class="fas fa-question-circle text-4xl text-green-600 mb-2"></i>
-                            <h3 class="text-3xl font-bold">${quizzesSnap.size}</h3>
-                            <p class="text-gray-600">Quizzes</p>
-                        </div>
-                        <div class="glass-card p-6 text-center border-l-4 border-orange-500">
-                            <i class="fas fa-list text-4xl text-orange-600 mb-2"></i>
-                            <h3 class="text-3xl font-bold">${totalQuestions}</h3>
-                            <p class="text-gray-600">Questions</p>
-                        </div>
-                        <div class="glass-card p-6 text-center border-l-4 border-purple-500">
-                            <i class="fas fa-folder text-4xl text-purple-600 mb-2"></i>
-                            <h3 class="text-3xl font-bold">${foldersSnap.size}</h3>
-                            <p class="text-gray-600">Folders</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 fade-in">
-                        <div class="glass-card p-6">
-                            <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button onclick="switchTab('folders'); showAddFolder()" class="p-4 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-left">
-                                    <i class="fas fa-folder-plus text-2xl text-indigo-600 mb-2"></i>
-                                    <p class="font-medium">Add Folder</p>
-                                </button>
-                                <button onclick="switchTab('quizzes'); showAddQuiz()" class="p-4 rounded-lg bg-green-50 hover:bg-green-100 text-left">
-                                    <i class="fas fa-plus-circle text-2xl text-green-600 mb-2"></i>
-                                    <p class="font-medium">Create Quiz</p>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="glass-card p-6">
-                            <h3 class="font-bold text-lg mb-4">System Status</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between p-3 bg-green-50 rounded-lg">
-                                    <span><i class="fas fa-check-circle text-green-600 mr-2"></i>Database</span>
-                                    <span class="text-green-600 font-medium">Online</span>
-                                </div>
-                                <div class="flex justify-between p-3 bg-green-50 rounded-lg">
-                                    <span><i class="fas fa-check-circle text-green-600 mr-2"></i>Storage</span>
-                                    <span class="text-green-600 font-medium">Online</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } catch (error) {
-                document.getElementById('contentArea').innerHTML = `<div class="text-red-500">Error: ${error.message}</div>`;
-            }
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.remove('hidden');
         }
 
-        // ==================== FOLDERS ====================
+        // Content Management - Fixed for nested folders
+        function loadContentHome() {
+            currentPath = [];
+            updateContentBreadcrumb();
 
-        async function loadFolders() {
-            try {
-                const snapshot = await db.collection('folders').orderBy('name').get();
-                allFolders = {};
-                snapshot.forEach(doc => {
-                    allFolders[doc.id] = { id: doc.id, ...doc.data() };
-                });
-                
-                let html = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">Folders</h3>
-                        <button onclick="showAddFolder()" class="px-4 py-2 rounded-lg btn-primary text-white">
-                            <i class="fas fa-plus mr-2"></i>Add Folder
-                        </button>
-                    </div>
-                    <div class="space-y-2">
-                `;
-                
-                if (snapshot.empty) {
-                    html += '<p class="text-gray-500 text-center py-8">No folders yet. Create one!</p>';
-                } else {
-                    snapshot.forEach(doc => {
+            db.collection('folders').where('parentId', '==', null).get().then(snapshot => {
+                renderContent(snapshot, 'folders');
+            });
+        }
+
+        function openContentFolder(folderId, folderName) {
+            currentPath.push({ id: folderId, name: folderName, type: 'folder' });
+            loadCurrentContent();
+        }
+
+        function loadCurrentContent() {
+            updateContentBreadcrumb();
+            const current = currentPath[currentPath.length - 1];
+
+            // Load subfolders
+            db.collection('folders').where('parentId', '==', current.id).get().then(foldersSnap => {
+                // Load quizzes
+                db.collection('quizzes').where('folderId', '==', current.id).get().then(quizzesSnap => {
+                    let html = '<div class="folders-grid">';
+
+                    // Folders
+                    foldersSnap.forEach(doc => {
                         const folder = doc.data();
+                        const isSelected = selectedItems.has('folder_' + doc.id);
                         html += `
-                            <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-folder text-indigo-500 text-xl"></i>
-                                    <div>
-                                        <p class="font-medium">${folder.name}</p>
-                                        <p class="text-sm text-gray-500">${folder.description || ''}</p>
-                                    </div>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="editFolder('${doc.id}')" class="p-2 text-blue-500 hover:bg-blue-100 rounded"><i class="fas fa-edit"></i></button>
-                                    <button onclick="deleteFolder('${doc.id}')" class="p-2 text-red-500 hover:bg-red-100 rounded"><i class="fas fa-trash"></i></button>
-                                </div>
+                            <div class="folder-card ${isSelected ? 'selected-item' : ''}" data-id="${doc.id}" data-type="folder">
+                                ${bulkMode ? `<button class="select-btn" onclick="event.stopPropagation(); toggleSelect('folder_${doc.id}')">${isSelected ? '☑️' : '⬜'}</button>` : ''}
+                                ${!bulkMode ? `<button class="edit-btn" onclick="event.stopPropagation(); editFolder('${doc.id}', '${folder.name}')">✏️</button>` : ''}
+                                ${!bulkMode ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteFolder('${doc.id}')">🗑️</button>` : ''}
+                                <div class="folder-icon" onclick="openContentFolder('${doc.id}', '${folder.name}')">📁</div>
+                                <div class="folder-name" onclick="openContentFolder('${doc.id}', '${folder.name}')">${folder.name}</div>
                             </div>
                         `;
                     });
+
+                    // Quizzes
+                    quizzesSnap.forEach(doc => {
+                        const quiz = doc.data();
+                        const isSelected = selectedItems.has('quiz_' + doc.id);
+                        html += `
+                            <div class="folder-card ${isSelected ? 'selected-item' : ''}" data-id="${doc.id}" data-type="quiz" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);">
+                                ${bulkMode ? `<button class="select-btn" onclick="event.stopPropagation(); toggleSelect('quiz_${doc.id}')">${isSelected ? '☑️' : '⬜'}</button>` : ''}
+                                ${!bulkMode ? `<button class="edit-btn" onclick="event.stopPropagation(); editQuiz('${doc.id}')">✏️</button>` : ''}
+                                ${!bulkMode ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteQuiz('${doc.id}')">🗑️</button>` : ''}
+                                <div class="folder-icon" style="color: #667eea;">📝</div>
+                                <div class="folder-name">${quiz.title}</div>
+                                <div style="color: #666; font-size: 0.9em;">${quiz.questionCount || 0} questions</div>
+                            </div>
+                        `;
+                    });
+
+                    if (foldersSnap.empty && quizzesSnap.empty) {
+                        html += '<p>This folder is empty.</p>';
+                    }
+
+                    html += '</div>';
+                    document.getElementById('content-area').innerHTML = html;
+                });
+            });
+        }
+
+        function updateContentBreadcrumb() {
+            let html = '<a onclick="loadContentHome()">🏠 Root</a>';
+            currentPath.forEach((item, index) => {
+                html += ' > ';
+                if (index === currentPath.length - 1) {
+                    html += `<strong>${item.name}</strong>`;
+                } else {
+                    html += `<a onclick="navigateContentTo(${index})">${item.name}</a>`;
                 }
-                
-                html += '</div>';
-                document.getElementById('contentArea').innerHTML = html;
-                
-            } catch (error) {
-                document.getElementById('contentArea').innerHTML = `<div class="text-red-500">Error: ${error.message}</div>`;
+            });
+            document.getElementById('content-breadcrumb').innerHTML = html;
+        }
+
+        function navigateContentTo(index) {
+            currentPath = currentPath.slice(0, index + 1);
+            loadCurrentContent();
+        }
+
+        // Bulk Actions
+        function toggleBulkMode() {
+            bulkMode = !bulkMode;
+            selectedItems.clear();
+            updateBulkActions();
+            if (currentPath.length === 0) loadContentHome();
+            else loadCurrentContent();
+        }
+
+        function toggleSelect(itemId) {
+            if (selectedItems.has(itemId)) {
+                selectedItems.delete(itemId);
+            } else {
+                selectedItems.add(itemId);
+            }
+            updateBulkActions();
+            if (currentPath.length === 0) loadContentHome();
+            else loadCurrentContent();
+        }
+
+        function updateBulkActions() {
+            const bulkDiv = document.getElementById('bulk-actions');
+            if (bulkMode && selectedItems.size > 0) {
+                bulkDiv.classList.add('active');
+                document.getElementById('selected-count').textContent = selectedItems.size + ' selected';
+            } else {
+                bulkDiv.classList.remove('active');
             }
         }
 
-        function showAddFolder() {
-            const name = prompt('Folder name:');
-            if (!name) return;
-            
-            const desc = prompt('Description (optional):');
-            
-            db.collection('folders').add({
-                name: name,
-                description: desc || '',
-                parentId: null,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                alert('Folder created!');
-                loadFolders();
-            }).catch(err => alert('Error: ' + err.message));
+        function clearSelection() {
+            selectedItems.clear();
+            updateBulkActions();
+            if (currentPath.length === 0) loadContentHome();
+            else loadCurrentContent();
         }
 
-        function editFolder(id) {
-            const folder = allFolders[id];
-            const newName = prompt('New name:', folder.name);
-            if (newName === null) return;
-            
-            db.collection('folders').doc(id).update({
-                name: newName
+        function deleteSelected() {
+            if (!confirm('Delete ' + selectedItems.size + ' selected items?')) return;
+
+            let deleted = 0;
+            selectedItems.forEach(itemId => {
+                const [type, id] = itemId.split('_');
+                if (type === 'folder') {
+                    deleteFolderRecursive(id);
+                } else if (type === 'quiz') {
+                    deleteQuiz(id);
+                }
+                deleted++;
+            });
+
+            setTimeout(() => {
+                selectedItems.clear();
+                updateBulkActions();
+                if (currentPath.length === 0) loadContentHome();
+                else loadCurrentContent();
+            }, 1000);
+        }
+
+        function deleteFolderRecursive(folderId) {
+            // Delete subfolders
+            db.collection('folders').where('parentId', '==', folderId).get().then(snap => {
+                snap.forEach(doc => deleteFolderRecursive(doc.id));
+            });
+
+            // Delete quizzes in folder
+            db.collection('quizzes').where('folderId', '==', folderId).get().then(snap => {
+                snap.forEach(doc => deleteQuiz(doc.id));
+            });
+
+            // Delete folder
+            db.collection('folders').doc(folderId).delete();
+        }
+
+        // Folder CRUD
+        function createFolder() {
+            const name = document.getElementById('folder-name').value.trim();
+            if (!name) return alert('Please enter folder name');
+
+            const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
+
+            db.collection('folders').add({
+                name: name,
+                parentId: parentId,
+                createdAt: new Date()
             }).then(() => {
-                loadFolders();
+                closeModal('folder-modal');
+                document.getElementById('folder-name').value = '';
+                if (currentPath.length === 0) loadContentHome();
+                else loadCurrentContent();
+            });
+        }
+
+        function editFolder(id, name) {
+            editingFolderId = id;
+            document.getElementById('edit-folder-name').value = name;
+            openModal('edit-folder-modal');
+        }
+
+        function updateFolder() {
+            const name = document.getElementById('edit-folder-name').value.trim();
+            if (!name) return;
+
+            db.collection('folders').doc(editingFolderId).update({ name }).then(() => {
+                closeModal('edit-folder-modal');
+                if (currentPath.length === 0) loadContentHome();
+                else loadCurrentContent();
             });
         }
 
         function deleteFolder(id) {
-            if (!confirm('Delete this folder?')) return;
-            db.collection('folders').doc(id).delete().then(() => loadFolders());
+            if (!confirm('Delete this folder and all its contents?')) return;
+
+            deleteFolderRecursive(id);
+
+            setTimeout(() => {
+                if (currentPath.length === 0) loadContentHome();
+                else loadCurrentContent();
+            }, 500);
         }
 
-        // ==================== QUIZZES ====================
+        // Quiz CRUD
+        function showQuizTab(tab) {
+            document.querySelectorAll('#quiz-modal .nav-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
 
-        async function loadQuizzes() {
-            try {
-                const snapshot = await db.collection('quizzes').orderBy('createdAt', 'desc').get();
-                
-                let html = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">Quizzes</h3>
-                        <button onclick="showAddQuiz()" class="px-4 py-2 rounded-lg btn-primary text-white">
-                            <i class="fas fa-plus mr-2"></i>Create Quiz
-                        </button>
-                    </div>
-                `;
-                
-                if (snapshot.empty) {
-                    html += '<p class="text-gray-500 text-center py-8">No quizzes yet.</p>';
-                } else {
-                    html += '<div class="space-y-3">';
-                    snapshot.forEach(doc => {
-                        const quiz = doc.data();
-                        html += `
-                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg flex justify-between items-center">
-                                <div>
-                                    <p class="font-bold">${quiz.title}</p>
-                                    <p class="text-sm text-gray-500">${quiz.questionCount} questions • ${quiz.duration} mins</p>
-                                </div>
-                                <button onclick="deleteQuiz('${doc.id}')" class="p-2 text-red-500 hover:bg-red-100 rounded">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
-                    });
-                    html += '</div>';
+            document.getElementById('quiz-upload-tab').classList.add('hidden');
+            document.getElementById('quiz-paste-tab').classList.add('hidden');
+            document.getElementById(tab + '-tab').classList.remove('hidden');
+        }
+
+        function handleQuizFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseQuestions(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        function parsePastedText() {
+            const text = document.getElementById('quiz-paste').value;
+            if (!text.trim()) return alert('Please paste some text');
+            parseQuestions(text);
+        }
+
+        function parseQuestions(text) {
+            currentQuestions = [];
+            const blocks = text.split(/\n\s*\n/);
+
+            blocks.forEach(block => {
+                const lines = block.trim().split('\n').map(l => l.trim()).filter(l => l);
+                if (lines.length < 6) return;
+
+                const qMatch = lines[0].match(/^Question:\s*(.+)/i);
+                if (!qMatch) return;
+
+                const question = qMatch[1];
+                const options = [];
+
+                for (let i = 1; i <= 4; i++) {
+                    const match = lines[i].match(/^[A-D]\)\s*(.+)/i);
+                    if (match) options.push(match[1]);
                 }
-                
-                document.getElementById('contentArea').innerHTML = html;
-                
-            } catch (error) {
-                document.getElementById('contentArea').innerHTML = `<div class="text-red-500">Error: ${error.message}</div>`;
-            }
+
+                if (options.length !== 4) return;
+
+                const correctMatch = lines.find(l => l.match(/^Correct:\s*([A-D])/i));
+                const correct = correctMatch ? correctMatch.match(/^Correct:\s*([A-D])/i)[1].toUpperCase() : 'A';
+
+                const expMatch = lines.find(l => l.match(/^Explanation:\s*(.+)/i));
+                const explanation = expMatch ? expMatch.match(/^Explanation:\s*(.+)/i)[1] : '';
+
+                currentQuestions.push({
+                    question, options, correctAnswer: correct.charCodeAt(0) - 65, explanation
+                });
+            });
+
+            showQuizPreview();
         }
 
-        async function showAddQuiz() {
-            const title = prompt('Quiz title:');
-            if (!title) return;
-            
-            const duration = parseInt(prompt('Duration in minutes:', '30')) || 30;
-            const questionCount = parseInt(prompt('Number of questions:', '10')) || 10;
-            
-            try {
-                await db.collection('quizzes').add({
-                    title: title,
-                    duration: duration,
-                    questionCount: questionCount,
-                    folderId: null,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        function showQuizPreview() {
+            document.getElementById('quiz-preview').classList.remove('hidden');
+            document.getElementById('preview-count').textContent = currentQuestions.length;
+
+            document.getElementById('preview-list').innerHTML = currentQuestions.map((q, i) => `
+                <div class="question-preview">
+                    <strong>Q${i+1}:</strong> ${q.question}<br>
+                    ${q.options.map((opt, idx) => `
+                        <span style="${idx === q.correctAnswer ? 'color: #4caf50; font-weight: bold;' : ''}">
+                            ${String.fromCharCode(65+idx)}) ${opt}
+                        </span>
+                    `).join('<br>')}
+                </div>
+            `).join('');
+        }
+
+        function saveQuiz() {
+            const title = document.getElementById('quiz-title').value.trim();
+            if (!title) return alert('Please enter quiz title');
+            if (currentQuestions.length === 0) return alert('No questions to save');
+
+            const folderId = currentPath[currentPath.length - 1].id;
+
+            db.collection('quizzes').add({
+                title: title,
+                folderId: folderId,
+                questionCount: currentQuestions.length,
+                createdAt: new Date()
+            }).then(docRef => {
+                let saved = 0;
+                currentQuestions.forEach((q, index) => {
+                    db.collection('quizzes').doc(docRef.id).collection('questions').add({
+                        ...q,
+                        order: index,
+                        createdAt: new Date()
+                    }).then(() => {
+                        saved++;
+                        if (saved === currentQuestions.length) {
+                            closeModal('quiz-modal');
+                            loadCurrentContent();
+                            loadStats();
+                        }
+                    });
                 });
-                
-                alert('Quiz created! Add questions in Firestore console.');
-                loadQuizzes();
-                
-            } catch (error) {
-                alert('Error: ' + error.message);
+            });
+        }
+
+        function editQuiz(id) {
+            editingQuizId = id;
+            db.collection('quizzes').doc(id).get().then(doc => {
+                const quiz = doc.data();
+                document.getElementById('edit-quiz-title').value = quiz.title;
+
+                db.collection('quizzes').doc(id).collection('questions').orderBy('order').get().then(qSnap => {
+                    currentQuestions = [];
+                    let html = '';
+                    qSnap.forEach((qDoc, index) => {
+                        const q = qDoc.data();
+                        currentQuestions.push({ id: qDoc.id, ...q });
+                        html += renderQuestionEditField(qDoc.id, index, q);
+                    });
+                    document.getElementById('edit-questions-list').innerHTML = html;
+                    openModal('edit-quiz-modal');
+                });
+            });
+        }
+
+        function renderQuestionEditField(qid, index, q) {
+            return `
+                <div class="question-preview" id="edit-q-${qid}" style="margin-bottom: 15px; border: 2px solid #e0e0e0;">
+                    <div class="form-group">
+                        <label>Question ${index + 1}</label>
+                        <input type="text" id="edit-q-text-${qid}" value="${q.question}" style="margin-bottom: 10px; width: 100%;">
+                        ${q.options.map((opt, i) => `
+                            <div style="display: flex; gap: 10px; margin: 5px 0;">
+                                <span style="line-height: 40px;">${String.fromCharCode(65+i)})</span>
+                                <input type="text" id="edit-opt-${qid}-${i}" value="${opt}" style="flex: 1;">
+                            </div>
+                        `).join('')}
+                        <div style="margin-top: 10px;">
+                            <label>Correct Answer:</label>
+                            <select id="edit-correct-${qid}">
+                                ${[0,1,2,3].map(i => `<option value="${i}" ${i === q.correctAnswer ? 'selected' : ''}>${String.fromCharCode(65+i)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <label>Explanation:</label>
+                            <input type="text" id="edit-exp-${qid}" value="${q.explanation || ''}" style="width: 100%;">
+                        </div>
+                        <button class="btn btn-danger btn-small" style="margin-top: 10px;" onclick="deleteQuestion('${qid}')">Delete Question</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addQuestionField() {
+            const tempId = 'temp_' + Date.now();
+            const newQ = {
+                question: '',
+                options: ['', '', '', ''],
+                correctAnswer: 0,
+                explanation: ''
+            };
+            currentQuestions.push({ id: tempId, ...newQ });
+
+            const html = renderQuestionEditField(tempId, currentQuestions.length - 1, newQ);
+            const container = document.getElementById('edit-questions-list');
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        function updateQuiz() {
+            const title = document.getElementById('edit-quiz-title').value.trim();
+            if (!title) return alert('Please enter quiz title');
+
+            db.collection('quizzes').doc(editingQuizId).update({ title });
+
+            // Update existing questions
+            currentQuestions.forEach(q => {
+                if (q.id.startsWith('temp_')) {
+                    // Add new question
+                    const newQ = {
+                        question: document.getElementById(`edit-q-text-${q.id}`).value,
+                        options: [0,1,2,3].map(i => document.getElementById(`edit-opt-${q.id}-${i}`).value),
+                        correctAnswer: parseInt(document.getElementById(`edit-correct-${q.id}`).value),
+                        explanation: document.getElementById(`edit-exp-${q.id}`).value,
+                        order: currentQuestions.indexOf(q),
+                        createdAt: new Date()
+                    };
+                    db.collection('quizzes').doc(editingQuizId).collection('questions').add(newQ);
+                } else {
+                    // Update existing
+                    const updatedQ = {
+                        question: document.getElementById(`edit-q-text-${q.id}`).value,
+                        options: [0,1,2,3].map(i => document.getElementById(`edit-opt-${q.id}-${i}`).value),
+                        correctAnswer: parseInt(document.getElementById(`edit-correct-${q.id}`).value),
+                        explanation: document.getElementById(`edit-exp-${q.id}`).value,
+                        order: currentQuestions.indexOf(q)
+                    };
+                    db.collection('quizzes').doc(editingQuizId).collection('questions').doc(q.id).update(updatedQ);
+                }
+            });
+
+            // Update question count
+            db.collection('quizzes').doc(editingQuizId).update({ 
+                questionCount: currentQuestions.length 
+            });
+
+            closeModal('edit-quiz-modal');
+            loadCurrentContent();
+            loadStats();
+        }
+
+        function deleteQuestion(qid) {
+            if (!confirm('Delete this question?')) return;
+
+            if (!qid.startsWith('temp_')) {
+                db.collection('quizzes').doc(editingQuizId).collection('questions').doc(qid).delete();
             }
+
+            document.getElementById(`edit-q-${qid}`).remove();
+            currentQuestions = currentQuestions.filter(q => q.id !== qid);
         }
 
         function deleteQuiz(id) {
             if (!confirm('Delete this quiz?')) return;
-            db.collection('quizzes').doc(id).delete().then(() => loadQuizzes());
+
+            // Delete all questions
+            db.collection('quizzes').doc(id).collection('questions').get().then(snap => {
+                snap.forEach(doc => doc.ref.delete());
+            });
+
+            // Delete quiz
+            db.collection('quizzes').doc(id).delete();
+
+            setTimeout(() => {
+                loadCurrentContent();
+                loadStats();
+            }, 500);
         }
 
-        // ==================== STUDENTS ====================
+        // Students
+        function loadStudents() {
+            db.collection('users').get().then(snapshot => {
+                renderStudents(snapshot.docs);
 
-        async function loadStudents() {
-            try {
-                const snapshot = await db.collection('students').orderBy('createdAt', 'desc').get();
-                
+                // Populate notification target dropdown
+                const select = document.getElementById('notif-target');
+                select.innerHTML = '<option value="">All Students</option>';
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    select.innerHTML += `<option value="${doc.id}">${user.username}</option>`;
+                });
+            });
+        }
+
+        function renderStudents(docs) {
+            let html = '<table><tr><th>Username</th><th>Quizzes Taken</th><th>Average Score</th><th>Last Active</th><th>Actions</th></tr>';
+
+            docs.forEach(doc => {
+                const user = doc.data();
+                const history = user.history || [];
+                const avg = history.length > 0 
+                    ? Math.round(history.reduce((a, b) => a + b.percent, 0) / history.length) 
+                    : 0;
+                const lastActive = user.lastActive ? 
+                    (user.lastActive.toDate ? user.lastActive.toDate().toLocaleDateString() : new Date(user.lastActive).toLocaleDateString()) 
+                    : 'Never';
+
+                html += `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td>${history.length}</td>
+                        <td>${avg}%</td>
+                        <td>${lastActive}</td>
+                        <td>
+                            <button class="btn btn-primary btn-small" onclick="viewStudent('${doc.id}')">View</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</table>';
+            document.getElementById('students-list').innerHTML = html;
+        }
+
+        function searchStudents() {
+            const query = document.getElementById('student-search').value.toLowerCase();
+            db.collection('users').get().then(snapshot => {
+                const filtered = snapshot.docs.filter(d => d.data().username.toLowerCase().includes(query));
+                renderStudents(filtered);
+            });
+        }
+
+        function viewStudent(id) {
+            db.collection('users').doc(id).get().then(doc => {
+                const user = doc.data();
+                const history = user.history || [];
+
                 let html = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">Students</h3>
-                        <span class="text-gray-500">${snapshot.size} total</span>
+                    <div class="student-analytics">
+                        <h3>${user.username}</h3>
+                        <p><strong>Joined:</strong> ${user.createdAt ? (user.createdAt.toDate ? user.createdAt.toDate().toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()) : 'Unknown'}</p>
+                        <p><strong>Total Quizzes:</strong> ${history.length}</p>
+                        <p><strong>Average Score:</strong> ${history.length > 0 ? Math.round(history.reduce((a,b) => a + b.percent, 0) / history.length) : 0}%</p>
                     </div>
                 `;
-                
-                if (snapshot.empty) {
-                    html += '<p class="text-gray-500 text-center py-8">No students registered yet.</p>';
-                } else {
-                    html += '<div class="space-y-2">';
-                    for (const doc of snapshot.docs) {
-                        const student = doc.data();
-                        const historySnap = await db.collection('students').doc(doc.id).collection('history').get();
-                        
-                        html += `
-                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg flex justify-between items-center">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                                        <i class="fas fa-user text-indigo-600"></i>
-                                    </div>
-                                    <div>
-                                        <p class="font-bold">${student.username}</p>
-                                        <p class="text-sm text-gray-500">${historySnap.size} quizzes taken</p>
-                                    </div>
-                                </div>
-                                <button onclick="deleteStudent('${doc.id}')" class="p-2 text-red-500 hover:bg-red-100 rounded">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
-                    }
-                    html += '</div>';
-                }
-                
-                document.getElementById('contentArea').innerHTML = html;
-                
-            } catch (error) {
-                document.getElementById('contentArea').innerHTML = `<div class="text-red-500">Error: ${error.message}</div>`;
-            }
-        }
 
-        function deleteStudent(id) {
-            if (!confirm('Delete this student?')) return;
-            db.collection('students').doc(id).delete().then(() => loadStudents());
-        }
-
-        // ==================== FILES ====================
-
-        async function loadFiles() {
-            try {
-                const snapshot = await db.collection('files').orderBy('uploadedAt', 'desc').get();
-                
-                let html = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">Files</h3>
-                        <span class="text-gray-500">${snapshot.size} files</span>
-                    </div>
-                `;
-                
-                if (snapshot.empty) {
-                    html += '<p class="text-gray-500 text-center py-8">No files uploaded.</p>';
-                } else {
-                    html += '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
-                    snapshot.forEach(doc => {
-                        const file = doc.data();
-                        html += `
-                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                <i class="fas fa-file text-3xl text-orange-500 mb-2"></i>
-                                <p class="font-medium truncate">${file.name}</p>
-                                <p class="text-sm text-gray-500">${file.size}</p>
-                                <div class="mt-2 flex gap-2">
-                                    <a href="${file.url}" target="_blank" class="text-blue-500 hover:underline text-sm">View</a>
-                                    <button onclick="deleteFile('${doc.id}')" class="text-red-500 hover:underline text-sm">Delete</button>
-                                </div>
-                            </div>
-                        `;
+                if (history.length > 0) {
+                    html += '<h4>Performance Over Time:</h4><table><tr><th>Quiz</th><th>Score</th><th>Date</th></tr>';
+                    history.slice().reverse().forEach(h => {
+                        const date = h.date.toDate ? h.date.toDate().toLocaleDateString() : new Date(h.date).toLocaleDateString();
+                        html += `<tr><td>${h.quizName}</td><td>${h.score}/${h.total} (${h.percent}%)</td><td>${date}</td></tr>`;
                     });
-                    html += '</div>';
+                    html += '</table>';
+
+                    // Show mistakes if any
+                    const allMistakes = [];
+                    history.forEach(h => {
+                        if (h.mistakes) {
+                            h.mistakes.forEach(m => {
+                                m.date = h.date;
+                                allMistakes.push(m);
+                            });
+                        }
+                    });
+
+                    if (allMistakes.length > 0) {
+                        html += `<h4 style="margin-top: 20px;">Common Mistakes (${allMistakes.length} total):</h4>`;
+                        allMistakes.slice(0, 5).forEach((m, i) => {
+                            html += `
+                                <div style="background: #ffebee; padding: 10px; border-radius: 5px; margin: 5px 0;">
+                                    <strong>Q:</strong> ${m.question}<br>
+                                    <span style="color: #f44336;">Wrong: ${m.yourAnswer}</span> | 
+                                    <span style="color: #4caf50;">Correct: ${m.correctAnswer}</span>
+                                </div>
+                            `;
+                        });
+                    }
+                } else {
+                    html += '<p>No quizzes taken yet.</p>';
                 }
-                
-                document.getElementById('contentArea').innerHTML = html;
-                
-            } catch (error) {
-                document.getElementById('contentArea').innerHTML = `<div class="text-red-500">Error: ${error.message}</div>`;
+
+                document.getElementById('student-details').innerHTML = html;
+                openModal('student-modal');
+            });
+        }
+
+        // Notifications
+        function sendNotification() {
+            const message = document.getElementById('notif-message').value.trim();
+            const target = document.getElementById('notif-target').value;
+            const duration = parseInt(document.getElementById('notif-duration').value);
+
+            if (!message) return alert('Please enter message');
+
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + duration);
+
+            const notifData = {
+                message: message,
+                createdAt: new Date(),
+                expiry: expiry,
+                active: true
+            };
+
+            if (target) {
+                notifData.targetUser = target;
             }
+
+            db.collection('notifications').add(notifData).then(() => {
+                alert('Notification sent!');
+                document.getElementById('notif-message').value = '';
+                loadNotifications();
+            });
+        }
+
+        function loadNotifications() {
+            db.collection('notifications').where('active', '==', true).orderBy('createdAt', 'desc').get().then(snapshot => {
+                let html = '';
+                snapshot.forEach(doc => {
+                    const notif = doc.data();
+                    const expiry = notif.expiry.toDate ? notif.expiry.toDate().toLocaleDateString() : new Date(notif.expiry).toLocaleDateString();
+                    const target = notif.targetUser ? ` (To: ${notif.targetUser})` : ' (To: All)';
+                    html += `
+                        <div style="padding: 15px; background: #e3f2fd; border-radius: 10px; margin-bottom: 10px;">
+                            <strong>${notif.message}</strong>${target}<br>
+                            <small>Expires: ${expiry}</small>
+                            <button class="btn btn-danger btn-small" style="float: right;" onclick="deleteNotification('${doc.id}')">Delete</button>
+                        </div>
+                    `;
+                });
+                document.getElementById('active-notifications').innerHTML = html || '<p>No active notifications</p>';
+            });
+        }
+
+        function deleteNotification(id) {
+            db.collection('notifications').doc(id).update({ active: false });
+            loadNotifications();
+        }
+
+        // Files - Drag & Drop
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('file-drop-zone');
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                dropZone.classList.add('dragover');
+            }
+
+            function unhighlight(e) {
+                dropZone.classList.remove('dragover');
+            }
+
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            }
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                uploadFile(file);
+            });
+        }
+
+        function uploadFile(file) {
+            const folderId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
+
+            // Upload to Firebase Storage
+            const storageRef = storage.ref('files/' + Date.now() + '_' + file.name);
+            const uploadTask = storageRef.put(file);
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    // Progress monitoring could be added here
+                },
+                (error) => {
+                    console.error('Upload error:', error);
+                    alert('Error uploading file: ' + file.name);
+                },
+                () => {
+                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                        // Save to Firestore
+                        db.collection('files').add({
+                            name: file.name,
+                            type: file.type,
+                            size: file.size,
+                            url: downloadURL,
+                            folderId: folderId,
+                            uploadedAt: new Date()
+                        }).then(() => {
+                            loadFiles();
+                            loadStats();
+                        });
+                    });
+                }
+            );
+        }
+
+        function loadFiles() {
+            db.collection('files').orderBy('uploadedAt', 'desc').get().then(snapshot => {
+                let html = '<div class="file-list">';
+                snapshot.forEach(doc => {
+                    const file = doc.data();
+                    const icon = file.name.endsWith('.pdf') ? '📄' : 
+                               file.name.endsWith('.ppt') || file.name.endsWith('.pptx') ? '📊' : 
+                               file.name.endsWith('.doc') || file.name.endsWith('.docx') ? '📝' : '📎';
+                    html += `
+                        <div class="file-item">
+                            <div>
+                                <div style="font-size: 1.5em;">${icon}</div>
+                                <strong>${file.name}</strong><br>
+                                <small>${(file.size / 1024).toFixed(2)} KB • ${file.uploadedAt.toDate ? file.uploadedAt.toDate().toLocaleDateString() : new Date(file.uploadedAt).toLocaleDateString()}</small>
+                            </div>
+                            <div>
+                                <button class="btn btn-primary btn-small" onclick="viewFile('${file.url}')">View</button>
+                                <a href="${file.url}" class="btn btn-secondary btn-small" download>Download</a>
+                                <button class="btn btn-danger btn-small" onclick="deleteFile('${doc.id}')">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                document.getElementById('files-list').innerHTML = html || '<p>No files uploaded yet</p>';
+            });
+        }
+
+        function viewFile(url) {
+            window.open(url, '_blank');
         }
 
         function deleteFile(id) {
             if (!confirm('Delete this file?')) return;
-            db.collection('files').doc(id).delete().then(() => loadFiles());
+
+            db.collection('files').doc(id).get().then(doc => {
+                if (doc.exists) {
+                    const fileData = doc.data();
+                    // Delete from Storage
+                    const fileRef = storage.refFromURL(fileData.url);
+                    fileRef.delete().catch(err => console.log('Storage delete error:', err));
+
+                    // Delete from Firestore
+                    db.collection('files').doc(id).delete().then(() => {
+                        loadFiles();
+                        loadStats();
+                    });
+                }
+            });
         }
 
-        // ==================== UTILITIES ====================
+        // Import/Export
+        function loadExportQuizzes() {
+            const select = document.getElementById('export-quiz-select');
+            select.innerHTML = '<option value="">Select Quiz...</option>';
 
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+            db.collection('quizzes').get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const quiz = doc.data();
+                    select.innerHTML += `<option value="${doc.id}">${quiz.title}</option>`;
+                });
+            });
         }
 
-        if (localStorage.getItem('darkMode') === 'true') {
-            document.body.classList.add('dark-mode');
+        function importQuiz(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    importData = JSON.parse(e.target.result);
+
+                    // Validate structure
+                    if (!importData.title || !importData.questions || !Array.isArray(importData.questions)) {
+                        throw new Error('Invalid format');
+                    }
+
+                    // Show preview
+                    document.getElementById('import-preview').classList.remove('hidden');
+                    document.getElementById('import-preview-content').innerHTML = `
+                        <p><strong>Title:</strong> ${importData.title}</p>
+                        <p><strong>Questions:</strong> ${importData.questions.length}</p>
+                        <div style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
+                            ${importData.questions.map((q, i) => `
+                                <div style="background: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 5px;">
+                                    <strong>Q${i+1}:</strong> ${q.question}<br>
+                                    Correct: ${String.fromCharCode(65 + q.correctAnswer)}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } catch (err) {
+                    alert('Error parsing JSON: ' + err.message);
+                    importData = null;
+                }
+            };
+            reader.readAsText(file);
         }
 
-        // Check for Enter key on login
-        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                adminLogin();
+        function confirmImport() {
+            if (!importData) return;
+
+            const folderId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
+            if (!folderId) {
+                alert('Please navigate to a folder first');
+                return;
             }
-        });
+
+            db.collection('quizzes').add({
+                title: importData.title,
+                folderId: folderId,
+                questionCount: importData.questions.length,
+                createdAt: new Date()
+            }).then(docRef => {
+                let saved = 0;
+                importData.questions.forEach((q, index) => {
+                    db.collection('quizzes').doc(docRef.id).collection('questions').add({
+                        question: q.question,
+                        options: q.options,
+                        correctAnswer: q.correctAnswer,
+                        explanation: q.explanation || '',
+                        order: index,
+                        createdAt: new Date()
+                    }).then(() => {
+                        saved++;
+                        if (saved === importData.questions.length) {
+                            alert('Quiz imported successfully!');
+                            cancelImport();
+                            loadCurrentContent();
+                            loadStats();
+                        }
+                    });
+                });
+            });
+        }
+
+        function cancelImport() {
+            importData = null;
+            document.getElementById('import-preview').classList.add('hidden');
+            document.getElementById('import-file').value = '';
+        }
+
+        function exportQuiz() {
+            const quizId = document.getElementById('export-quiz-select').value;
+            if (!quizId) return alert('Please select a quiz');
+
+            db.collection('quizzes').doc(quizId).get().then(doc => {
+                const quiz = doc.data();
+
+                db.collection('quizzes').doc(quizId).collection('questions').orderBy('order').get().then(qSnap => {
+                    const questions = [];
+                    qSnap.forEach(qDoc => {
+                        const q = qDoc.data();
+                        questions.push({
+                            question: q.question,
+                            options: q.options,
+                            correctAnswer: q.correctAnswer,
+                            explanation: q.explanation
+                        });
+                    });
+
+                    const exportObj = {
+                        title: quiz.title,
+                        questions: questions
+                    };
+
+                    const dataStr = JSON.stringify(exportObj, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(dataBlob);
+                    link.download = quiz.title.replace(/\s+/g, '_') + '.json';
+                    link.click();
+                });
+            });
+        }
+
+        // Modal Helpers
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        };
     </script>
 </body>
 </html>
