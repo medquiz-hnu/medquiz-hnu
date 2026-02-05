@@ -242,7 +242,7 @@
         function showTab(tab) {
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('#content-tab, #students-tab, #notifications-tab').forEach(t => t.classList.add('hidden'));
-            event.target.classList.add('active');
+            if(event) event.target.classList.add('active');
             document.getElementById(tab + '-tab').classList.remove('hidden');
             if (tab === 'students') loadStudents();
             if (tab === 'notifications') loadNotifications();
@@ -425,7 +425,7 @@
                     snap.forEach((d, i) => {
                         const qu = d.data();
                         currentQuestions.push({ id: d.id, ...qu });
-                        html += `<div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 10px;"><h4>Q${i+1}</h4><input type="text" id="q-${d.id}" value="${qu.question}" style="width: 100%; margin-bottom: 10px; padding: 8px;">${qu.options.map((o, j) => `<input type="text" id="opt-${d.id}-${j}" value="${o}" style="width: 100%; margin: 5px 0; padding: 8px;">`).join('')}<label>Correct:</label><select id="cor-${d.id}">${[0,1,2,3].map(j => `<option value="${j}" ${j===qu.correctAnswer?'selected':''}>${String.fromCharCode(65+j)}</option>`).join('')}</select><input type="text" id="exp-${d.id}" value="${qu.explanation || ''}" placeholder="Explanation" style="width: 100%; margin-top: 10px; padding: 8px;"><button class="btn btn-danger" style="margin-top: 10px;" onclick="deleteQuestion('${d.id}')">Delete</button></div>`;
+                        html += `<div id="div-${d.id}" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 10px;"><h4>Q${i+1}</h4><input type="text" id="q-${d.id}" value="${qu.question}" style="width: 100%; margin-bottom: 10px; padding: 8px;">${qu.options.map((o, j) => `<input type="text" id="opt-${d.id}-${j}" value="${o}" style="width: 100%; margin: 5px 0; padding: 8px;">`).join('')}<label>Correct:</label><select id="cor-${d.id}">${[0,1,2,3].map(j => `<option value="${j}" ${j===qu.correctAnswer?'selected':''}>${String.fromCharCode(65+j)}</option>`).join('')}</select><input type="text" id="exp-${d.id}" value="${qu.explanation || ''}" placeholder="Explanation" style="width: 100%; margin-top: 10px; padding: 8px;"><button class="btn btn-danger" style="margin-top: 10px;" onclick="deleteQuestion('${d.id}')">Delete</button></div>`;
                     });
                     document.getElementById('edit-questions').innerHTML = html;
                     openModal('edit-quiz-modal');
@@ -452,7 +452,13 @@
             if (!title) return alert('Enter title');
             db.collection('quizzes').doc(editingQuizId).update({ title });
             currentQuestions.forEach((q, i) => {
-                const data = { question: document.getElementById(`q-${q.id}`).value, options: [0,1,2,3].map(j => document.getElementById(`opt-${q.id}-${j}`).value), correctAnswer: parseInt(document.getElementById(`cor-${q.id}`).value), explanation: document.getElementById(`exp-${q.id}`).value, order: i };
+                const data = { 
+                    question: document.getElementById(`q-${q.id}`).value, 
+                    options: [0,1,2,3].map(j => document.getElementById(`opt-${q.id}-${j}`).value), 
+                    correctAnswer: parseInt(document.getElementById(`cor-${q.id}`).value), 
+                    explanation: document.getElementById(`exp-${q.id}`).value, 
+                    order: i 
+                };
                 if (q.id.startsWith('temp_')) db.collection('quizzes').doc(editingQuizId).collection('questions').add(data);
                 else db.collection('quizzes').doc(editingQuizId).collection('questions').doc(q.id).update(data);
             });
@@ -476,7 +482,7 @@
             });
         }
 
-        // FILE UPLOAD - SIMPLE AND WORKING
+        // FILE UPLOAD - FIXED COMPAT MODE
         function uploadFile(input) {
             const file = input.files[0];
             if (!file) return;
@@ -486,7 +492,9 @@
             progressDiv.innerHTML = '<p>Uploading: 0%</p>';
 
             const folderId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
-            const storageRef = storage.ref('files/' + Date.now() + '_' + file.name);
+            
+            // Use firebase.storage().ref() for compatibility
+            const storageRef = firebase.storage().ref().child('files/' + Date.now() + '_' + file.name);
             const uploadTask = storageRef.put(file);
 
             uploadTask.on('state_changed', 
@@ -530,7 +538,7 @@
             if (!confirm('Delete file?')) return;
             db.collection('files').doc(id).get().then(doc => {
                 if (doc.exists && doc.data().url) {
-                    storage.refFromURL(doc.data().url).delete().catch(e => console.log(e));
+                    firebase.storage().refFromURL(doc.data().url).delete().catch(e => console.log(e));
                 }
                 db.collection('files').doc(id).delete().then(() => {
                     const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
