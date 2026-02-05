@@ -3,415 +3,676 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedQuiz HNU - Student Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-firestore-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>MedQuiz HNU - Medical Quiz Platform</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * { font-family: 'Inter', sans-serif; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 20px;
         }
-        
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
-        
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+        }
+
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: transform 0.3s;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: #eee;
+            color: #333;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+        }
+
+        .folders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .folder-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .folder-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .folder-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .quiz-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .quiz-card:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-right: 5px solid #667eea;
+            position: relative;
+        }
+
+        .option {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .option.correct {
+            border-color: #4caf50;
+            background: #e8f5e9;
+        }
+
+        .option.wrong {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .result-container {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .result-score {
+            font-size: 4em;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .breadcrumb {
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            font-size: 1.2em;
+            font-weight: bold;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .timer.warning {
+            color: #f44336;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
         .dark-mode {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         }
-        
-        .dark-mode .glass-card {
-            background: rgba(30, 30, 46, 0.95);
+
+        .dark-mode .header,
+        .dark-mode .section,
+        .dark-mode .breadcrumb {
+            background: #0f3460;
             color: white;
         }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .folder-card {
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .folder-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-        
-        .hidden { display: none !important; }
-        
-        .fade-in {
-            animation: fadeIn 0.3s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .timer-display {
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-        
-        .timer-warning {
-            color: #ef4444;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .calc-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .dark-mode .folder-card,
+        .dark-mode .quiz-card {
+            background: #1a1a2e;
             color: white;
+        }
+
+        .dark-mode .question-card {
+            background: #16213e;
+            color: white;
+        }
+
+        .dark-mode .option {
+            background: #0f3460;
+            color: white;
+            border-color: #1a1a2e;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            font-size: 1em;
+        }
+
+        .favorite-btn, .flag-btn, .bookmark-btn {
+            position: absolute;
+            top: 10px;
+            background: none;
             border: none;
+            font-size: 1.5em;
             cursor: pointer;
-            font-size: 24px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
+            z-index: 10;
         }
-        
-        #calculator {
-            position: fixed;
-            bottom: 90px;
-            right: 20px;
-            width: 280px;
-            z-index: 1000;
+
+        .favorite-btn {
+            right: 10px;
         }
-        
+
+        .flag-btn {
+            right: 50px;
+        }
+
+        .bookmark-btn {
+            right: 90px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 2000;
+            animation: slideDown 0.5s;
+        }
+
+        .notification .close {
+            margin-left: 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); }
+            to { transform: translateX(-50%) translateY(0); }
+        }
+
+        .mistake-review {
+            background: #fff3e0;
+            border-left: 5px solid #ff9800;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+
+        .file-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #4caf50;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+
+        .file-card:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
         .zoom-controls {
             position: fixed;
             bottom: 20px;
-            left: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
             z-index: 1000;
             display: flex;
-            gap: 8px;
+            gap: 10px;
+        }
+
+        .calculator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+
+        .calculator input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+        }
+
+        .calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+
+        .calc-btn {
+            padding: 10px;
+            border: none;
+            background: #667eea;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .question-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            text-align: center;
+            line-height: 30px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .question-number.answered {
+            background: #4caf50;
+            color: white;
+        }
+
+        .question-number.flagged {
+            background: #ff9800;
+            color: white;
+        }
+
+        .question-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .file-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 3000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .file-viewer iframe {
+            width: 90%;
+            height: 80%;
+            border: none;
+            border-radius: 10px;
+        }
+
+        .file-viewer-controls {
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .timer {
+                top: 10px;
+                right: 10px;
+                padding: 10px 15px;
+                font-size: 1em;
+            }
+
+            .folders-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
+<base target="_blank">
 </head>
-<body class="p-4">
-    <!-- Login Screen -->
-    <div id="loginScreen" class="min-h-screen flex items-center justify-center">
-        <div class="glass-card p-8 w-full max-w-md">
-            <div class="text-center mb-8">
-                <i class="fas fa-stethoscope text-6xl text-indigo-600 mb-4"></i>
-                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">MedQuiz HNU</h1>
-                <p class="text-gray-600 mt-2">Medical Quiz Platform</p>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="section">
+            <div class="header">
+                <h1>🩺 MedQuiz HNU</h1>
+                <p>Medical Quiz Platform</p>
             </div>
-            
-            <form id="authForm" onsubmit="event.preventDefault(); handleAuth();" class="space-y-4">
-                <div class="flex justify-center space-x-4 mb-6">
-                    <button type="button" onclick="switchAuthMode('login')" id="loginTab" class="px-6 py-2 rounded-full btn-primary text-white">Login</button>
-                    <button type="button" onclick="switchAuthMode('signup')" id="signupTab" class="px-6 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300">Sign Up</button>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
-                    <input type="text" id="authUsername" placeholder="Enter username" required
-                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PIN (4 digits)</label>
-                    <input type="password" id="authPin" placeholder="Enter 4-digit PIN" maxlength="4" pattern="\d{4}" required
-                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-center tracking-widest">
-                </div>
-                
-                <button type="submit" id="authBtn" class="w-full py-3 rounded-lg btn-primary text-white font-semibold flex items-center justify-center gap-2">
-                    <span id="authBtnText">Login</span>
-                </button>
-                
-                <div id="authError" class="text-red-500 text-center hidden bg-red-50 p-3 rounded-lg text-sm"></div>
-                
-                <div id="authSuccess" class="text-green-600 text-center hidden bg-green-50 p-3 rounded-lg text-sm"></div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Main App -->
-    <div id="mainApp" class="hidden max-w-6xl mx-auto">
-        <!-- Header -->
-        <div class="glass-card p-6 mb-6">
-            <div class="flex justify-between items-center flex-wrap gap-4">
-                <div class="flex items-center gap-4">
-                    <i class="fas fa-stethoscope text-4xl text-indigo-600"></i>
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">MedQuiz HNU</h1>
-                        <p class="text-gray-600 dark:text-gray-300">Welcome, <span id="userName">Student</span>!</p>
-                    </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showLoginTab('login')">Login</button>
+                <button class="nav-tab" onclick="showLoginTab('signup')">Sign Up</button>
+            </div>
+
+            <div id="login-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="login-username" placeholder="Enter username">
                 </div>
-                
-                <div class="flex items-center gap-3">
-                    <button onclick="toggleDarkMode()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition">
-                        <i class="fas fa-moon dark:hidden"></i>
-                        <i class="fas fa-sun hidden dark:inline"></i>
-                    </button>
-                    
-                    <button onclick="logout()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                    </button>
+                <div class="form-group">
+                    <label>PIN Code (4 digits)</label>
+                    <input type="password" id="login-pin" placeholder="Enter PIN" maxlength="4">
                 </div>
+                <button class="btn" onclick="login()">Login</button>
+            </div>
+
+            <div id="signup-form" class="hidden">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="signup-username" placeholder="Choose username">
+                </div>
+                <div class="form-group">
+                    <label>PIN Code (4 digits)</label>
+                    <input type="password" id="signup-pin" placeholder="Choose PIN" maxlength="4">
+                </div>
+                <div class="form-group">
+                    <label>Confirm PIN</label>
+                    <input type="password" id="signup-pin-confirm" placeholder="Confirm PIN" maxlength="4">
+                </div>
+                <button class="btn" onclick="signup()">Sign Up</button>
             </div>
         </div>
 
-        <!-- Breadcrumb -->
-        <div class="glass-card p-4 mb-4 flex items-center gap-2 text-sm flex-wrap">
-            <button onclick="navigateToRoot()" class="text-indigo-600 hover:underline font-medium"><i class="fas fa-home mr-1"></i>Home</button>
-            <span id="breadcrumb"></span>
-        </div>
-
-        <!-- Navigation Tabs -->
-        <div class="glass-card p-4 mb-6">
-            <div class="flex gap-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-                <button onclick="switchTab('browse')" id="tab-browse" class="tab-active pb-3 px-2 whitespace-nowrap font-medium text-indigo-600 border-b-2 border-indigo-600">
-                    <i class="fas fa-folder-open mr-2"></i>Browse
-                </button>
-                <button onclick="switchTab('favorites')" id="tab-favorites" class="pb-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap hover:text-indigo-600">
-                    <i class="fas fa-star mr-2"></i>Favorites
-                </button>
-                <button onclick="switchTab('mistakes')" id="tab-mistakes" class="pb-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap hover:text-indigo-600">
-                    <i class="fas fa-times-circle mr-2 text-red-500"></i>My Mistakes
-                </button>
-                <button onclick="switchTab('history')" id="tab-history" class="pb-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap hover:text-indigo-600">
-                    <i class="fas fa-history mr-2"></i>History
-                </button>
-            </div>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="glass-card p-4 mb-6">
-            <div class="relative">
-                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="Search folders, quizzes, files..." 
-                    class="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-indigo-500">
-            </div>
-        </div>
-
-        <!-- Content Area -->
-        <div id="contentArea" class="glass-card p-6 min-h-[400px]">
-            <div class="flex justify-center items-center h-64">
-                <div class="loading-spinner mr-2"></div>
-                <span class="text-gray-600">Loading...</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quiz Interface -->
-    <div id="quizInterface" class="hidden max-w-4xl mx-auto">
-        <div class="glass-card p-6 mb-4">
-            <div class="flex justify-between items-center flex-wrap gap-4">
-                <h2 id="quizTitle" class="text-2xl font-bold"></h2>
-                <div class="flex items-center gap-4">
-                    <div id="timer" class="timer-display bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
-                        <i class="fas fa-clock mr-2"></i><span id="timeRemaining">30:00</span>
-                    </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400">
-                        Question <span id="currentQNum">1</span> of <span id="totalQNum">0</span>
-                    </div>
+        <!-- Main App (Hidden initially) -->
+        <div id="main-app" class="hidden">
+            <div class="header">
+                <h1>🩺 MedQuiz HNU</h1>
+                <p>Welcome, <span id="user-name"></span>!</p>
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-secondary" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+                    <button class="btn btn-secondary" onclick="toggleCalculator()">🧮 Calc</button>
+                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                    <a href="admin.html" class="btn" style="text-decoration: none;">⚙️ Admin</a>
                 </div>
             </div>
-            
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-4">
-                <div id="quizProgress" class="bg-indigo-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+
+            <div class="breadcrumb" id="breadcrumb">
+                <a onclick="goHome()">🏠 Home</a>
+            </div>
+
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showMainTab('browse')">📚 Browse</button>
+                <button class="nav-tab" onclick="showMainTab('favorites')">⭐ Favorites</button>
+                <button class="nav-tab" onclick="showMainTab('bookmarks')">🔖 Bookmarks</button>
+                <button class="nav-tab" onclick="showMainTab('mistakes')">❌ My Mistakes</button>
+                <button class="nav-tab" onclick="showMainTab('history')">📊 History</button>
+            </div>
+
+            <div id="browse-tab" class="section">
+                <input type="text" class="search-box" id="search-box" placeholder="🔍 Search folders, quizzes, files..." onkeyup="searchContent()">
+                <div id="browse-content"></div>
+            </div>
+
+            <div id="favorites-tab" class="section hidden">
+                <h2>⭐ My Favorites</h2>
+                <div id="favorites-content"></div>
+            </div>
+
+            <div id="bookmarks-tab" class="section hidden">
+                <h2>🔖 Bookmarked Questions</h2>
+                <div id="bookmarks-content"></div>
+            </div>
+
+            <div id="mistakes-tab" class="section hidden">
+                <h2>❌ My Mistakes</h2>
+                <div id="mistakes-content"></div>
+            </div>
+
+            <div id="history-tab" class="section hidden">
+                <h2>📊 My History</h2>
+                <div id="history-content"></div>
             </div>
         </div>
 
-        <div class="glass-card p-6 mb-4" id="questionCard">
-            <div class="flex justify-between items-start mb-4">
-                <div class="flex gap-2">
-                    <button onclick="toggleBookmark()" id="bookmarkBtn" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400">
-                        <i class="far fa-bookmark text-xl"></i>
-                    </button>
-                    <button onclick="toggleFlag()" id="flagBtn" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400">
-                        <i class="far fa-flag text-xl"></i>
-                    </button>
-                </div>
-                <div class="text-sm text-gray-500">
-                    <i class="fas fa-bookmark mr-1 text-yellow-500"></i><span id="bookmarkCount">0</span> bookmarked
-                </div>
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden">
+            <div class="timer" id="timer">
+                <span>⏱️ <span id="timer-text">30:00</span></span>
+                <button class="btn btn-small btn-secondary" onclick="toggleZoom()">🔍 Zoom</button>
             </div>
-            
-            <div id="questionText" class="text-lg mb-6 font-medium leading-relaxed"></div>
-            
-            <div id="optionsContainer" class="space-y-3">
-                <!-- Options loaded dynamically -->
+
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
             </div>
-            
-            <div id="explanationBox" class="hidden mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border-l-4 border-blue-500">
-                <h4 class="font-bold mb-2"><i class="fas fa-info-circle mr-2"></i>Explanation</h4>
-                <p id="explanationText"></p>
+
+            <div class="question-nav" id="question-nav"></div>
+
+            <div class="section">
+                <h2 id="quiz-title"></h2>
+                <div id="questions-container"></div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn" onclick="previousQuestion()">⬅️ Previous</button>
+                    <button class="btn" onclick="nextQuestion()">Next ➡️</button>
+                    <button class="btn btn-secondary" onclick="finishQuiz()">Finish Quiz</button>
+                </div>
             </div>
         </div>
 
-        <div class="glass-card p-4 flex justify-between items-center flex-wrap gap-4">
-            <button onclick="previousQuestion()" id="prevBtn" class="px-6 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition disabled:opacity-50">
-                <i class="fas fa-chevron-left mr-2"></i>Previous
-            </button>
-            
-            <div class="flex gap-2">
-                <button onclick="saveProgress()" class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition">
-                    <i class="fas fa-save mr-2"></i>Save
-                </button>
-                <button onclick="submitQuiz()" class="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition">
-                    <i class="fas fa-check mr-2"></i>Submit
-                </button>
-            </div>
-            
-            <button onclick="nextQuestion()" id="nextBtn" class="px-6 py-2 rounded-lg btn-primary text-white transition">
-                Next<i class="fas fa-chevron-right ml-2"></i>
-            </button>
-        </div>
-    </div>
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden">
+            <div class="section result-container">
+                <h2>🎉 Quiz Completed!</h2>
+                <div class="result-score" id="final-score"></div>
+                <p id="result-message"></p>
 
-    <!-- Results Screen -->
-    <div id="resultsScreen" class="hidden min-h-screen flex items-center justify-center p-4">
-        <div class="glass-card p-8 w-full max-w-2xl text-center">
-            <div class="mb-6">
-                <div class="text-6xl mb-4" id="resultEmoji">🎉</div>
-                <h2 class="text-3xl font-bold mb-2">Quiz Completed!</h2>
-                <p class="text-gray-600 dark:text-gray-400">Here's how you performed</p>
-            </div>
-            
-            <div class="grid grid-cols-3 gap-4 mb-6">
-                <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <div class="text-2xl font-bold text-indigo-600" id="scorePercent">0%</div>
-                    <div class="text-sm text-gray-600">Score</div>
+                <div id="mistakes-review" class="hidden" style="margin: 30px 0; text-align: left;">
+                    <h3>❌ Questions You Got Wrong:</h3>
+                    <div id="mistakes-list"></div>
                 </div>
-                <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <div class="text-2xl font-bold text-green-600" id="correctCount">0</div>
-                    <div class="text-sm text-gray-600">Correct</div>
-                </div>
-                <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <div class="text-2xl font-bold text-red-600" id="wrongCount">0</div>
-                    <div class="text-sm text-gray-600">Wrong</div>
+
+                <div style="margin-top: 30px;">
+                    <button class="btn" onclick="reviewMistakes()">Review Mistakes</button>
+                    <button class="btn btn-secondary" onclick="goHome()">Back to Home</button>
                 </div>
             </div>
-            
-            <div id="mistakesReview" class="text-left mb-6 max-h-64 overflow-y-auto"></div>
-            
-            <div class="flex justify-center gap-4 flex-wrap">
-                <button onclick="returnToBrowse()" class="px-6 py-3 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition">
-                    <i class="fas fa-arrow-left mr-2"></i>Back to Browse
-                </button>
-                <button onclick="retakeQuiz()" class="px-6 py-3 rounded-lg btn-primary text-white">
-                    <i class="fas fa-redo mr-2"></i>Retake Quiz
-                </button>
-            </div>
         </div>
-    </div>
 
-    <!-- File Viewer Modal -->
-    <div id="fileModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="glass-card w-full max-w-4xl h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
-                <h3 id="fileTitle" class="text-xl font-bold truncate"></h3>
-                <div class="flex gap-2">
-                    <a id="downloadBtn" class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition flex items-center gap-2" download>
-                        <i class="fas fa-download"></i>Download
-                    </a>
-                    <button onclick="closeFileModal()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <div id="fileViewer" class="flex-1 overflow-auto p-4 bg-gray-100 dark:bg-gray-900">
-                <!-- File content -->
-            </div>
+        <!-- Zoom Controls -->
+        <div class="zoom-controls" id="zoom-controls" style="display: none;">
+            <button class="btn btn-small" onclick="changeFontSize(-1)">A-</button>
+            <button class="btn btn-small" onclick="changeFontSize(1)">A+</button>
+            <button class="btn btn-small btn-secondary" onclick="toggleZoom()">✕</button>
         </div>
-    </div>
 
-    <!-- Calculator -->
-    <div class="zoom-controls">
-        <button onclick="adjustFontSize(-1)" class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center hover:bg-gray-100 transition" title="Decrease font">
-            <i class="fas fa-minus text-sm"></i>
-        </button>
-        <button onclick="adjustFontSize(1)" class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center hover:bg-gray-100 transition" title="Increase font">
-            <i class="fas fa-plus text-sm"></i>
-        </button>
-    </div>
-
-    <button onclick="toggleCalculator()" class="calc-btn" title="Calculator">
-        <i class="fas fa-calculator"></i>
-    </button>
-
-    <div id="calculator" class="hidden glass-card p-4">
-        <div class="flex justify-between items-center mb-3">
-            <span class="font-bold">Calculator</span>
-            <button onclick="toggleCalculator()" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times"></i>
-            </button>
+        <!-- Calculator -->
+        <div class="calculator" id="calculator">
+            <input type="text" id="calc-display" readonly>
+            <div class="calc-buttons">
+                <button class="calc-btn" onclick="calcClear()">C</button>
+                <button class="calc-btn" onclick="calcInput('/')">/</button>
+                <button class="calc-btn" onclick="calcInput('*')">×</button>
+                <button class="calc-btn" onclick="calcDelete()">⌫</button>
+                <button class="calc-btn" onclick="calcInput('7')">7</button>
+                <button class="calc-btn" onclick="calcInput('8')">8</button>
+                <button class="calc-btn" onclick="calcInput('9')">9</button>
+                <button class="calc-btn" onclick="calcInput('-')">-</button>
+                <button class="calc-btn" onclick="calcInput('4')">4</button>
+                <button class="calc-btn" onclick="calcInput('5')">5</button>
+                <button class="calc-btn" onclick="calcInput('6')">6</button>
+                <button class="calc-btn" onclick="calcInput('+')">+</button>
+                <button class="calc-btn" onclick="calcInput('1')">1</button>
+                <button class="calc-btn" onclick="calcInput('2')">2</button>
+                <button class="calc-btn" onclick="calcInput('3')">3</button>
+                <button class="calc-btn" onclick="calcCalculate()" style="grid-row: span 2;">=</button>
+                <button class="calc-btn" onclick="calcInput('0')" style="grid-column: span 2;">0</button>
+                <button class="calc-btn" onclick="calcInput('.')">.</button>
+            </div>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" onclick="toggleCalculator()">Close</button>
         </div>
-        <input type="text" id="calcDisplay" readonly class="w-full p-3 mb-3 text-right text-xl bg-gray-100 dark:bg-gray-800 rounded border-none">
-        <div class="grid grid-cols-4 gap-2">
-            <button onclick="calcInput('C')" class="p-3 rounded bg-red-100 text-red-600 hover:bg-red-200 font-bold">C</button>
-            <button onclick="calcInput('/')" class="p-3 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">÷</button>
-            <button onclick="calcInput('*')" class="p-3 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">×</button>
-            <button onclick="calcInput('-')" class="p-3 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">−</button>
-            <button onclick="calcInput('7')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">7</button>
-            <button onclick="calcInput('8')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">8</button>
-            <button onclick="calcInput('9')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">9</button>
-            <button onclick="calcInput('+')" class="p-3 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">+</button>
-            <button onclick="calcInput('4')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">4</button>
-            <button onclick="calcInput('5')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">5</button>
-            <button onclick="calcInput('6')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">6</button>
-            <button onclick="calcInput('=')" class="p-3 rounded btn-primary text-white row-span-2 font-bold">=</button>
-            <button onclick="calcInput('1')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">1</button>
-            <button onclick="calcInput('2')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">2</button>
-            <button onclick="calcInput('3')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">3</button>
-            <button onclick="calcInput('0')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 col-span-2">0</button>
-            <button onclick="calcInput('.')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">.</button>
+
+        <!-- File Viewer -->
+        <div class="file-viewer" id="file-viewer">
+            <iframe id="file-frame"></iframe>
+            <div class="file-viewer-controls">
+                <a id="download-link" class="btn" download>⬇️ Download</a>
+                <button class="btn btn-secondary" onclick="closeFileViewer()">✕ Close</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyB001YxSS9iQ6PArK1VHf0lIlpLyP1Rqew",
             authDomain: "medquiz-hnu.firebaseapp.com",
@@ -422,949 +683,978 @@
             measurementId: "G-4T9XPB89N7"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const storage = firebase.storage();
 
-        // Global State
         let currentUser = null;
         let currentPath = [];
-        let currentQuiz = null;
-        let quizState = {
-            questions: [],
-            currentIndex: 0,
-            answers: {},
-            bookmarks: new Set(),
-            flagged: new Set(),
-            timerInterval: null,
-            timeRemaining: 1800
-        };
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = {};
+        let flaggedQuestions = new Set();
+        let bookmarkedQuestions = [];
+        let correctCount = 0;
+        let quizMistakes = [];
+        let timerInterval;
+        let timeRemaining = 1800;
+        let currentQuizId = null;
+        let currentQuizTitle = '';
         let fontSize = 16;
-        let currentTab = 'browse';
-        let authMode = 'login';
+        let autoSaveInterval;
 
-        // ==================== AUTH FUNCTIONS ====================
+        // Check for existing session
+        window.onload = function() {
+            const savedUser = localStorage.getItem('medquiz_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showMainApp();
+            }
+            checkNotifications();
+            loadBookmarks();
+        };
 
-        function switchAuthMode(mode) {
-            authMode = mode;
-            document.getElementById('loginTab').className = mode === 'login' ? 
-                'px-6 py-2 rounded-full btn-primary text-white' : 'px-6 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300';
-            document.getElementById('signupTab').className = mode === 'signup' ? 
-                'px-6 py-2 rounded-full btn-primary text-white' : 'px-6 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300';
-            document.getElementById('authBtnText').textContent = mode === 'login' ? 'Login' : 'Sign Up';
-            
-            // Clear messages
-            document.getElementById('authError').classList.add('hidden');
-            document.getElementById('authSuccess').classList.add('hidden');
+        // Login/Signup Tabs
+        function showLoginTab(tab) {
+            document.querySelectorAll('#login-screen .nav-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (tab === 'login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('signup-form').classList.add('hidden');
+            } else {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('signup-form').classList.remove('hidden');
+            }
         }
 
-        async function handleAuth() {
-            const username = document.getElementById('authUsername').value.trim().toLowerCase();
-            const pin = document.getElementById('authPin').value;
-            const btn = document.getElementById('authBtn');
-            const errorDiv = document.getElementById('authError');
-            const successDiv = document.getElementById('authSuccess');
-            
-            // Reset messages
-            errorDiv.classList.add('hidden');
-            successDiv.classList.add('hidden');
-            
-            // Validation
-            if (!username || username.length < 3) {
-                showAuthError('Username must be at least 3 characters');
+        // Hash PIN for security
+        function hashPin(pin) {
+            let hash = 0;
+            for (let i = 0; i < pin.length; i++) {
+                const char = pin.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return hash.toString();
+        }
+
+        // Signup
+        function signup() {
+            const username = document.getElementById('signup-username').value.trim().toLowerCase();
+            const pin = document.getElementById('signup-pin').value;
+            const pinConfirm = document.getElementById('signup-pin-confirm').value;
+
+            if (!username || pin.length !== 4) {
+                alert('Please enter username and 4-digit PIN');
                 return;
             }
-            if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-                showAuthError('PIN must be exactly 4 digits');
+
+            if (pin !== pinConfirm) {
+                alert('PIN codes do not match');
                 return;
             }
-            
-            // Show loading
-            btn.disabled = true;
-            const originalText = document.getElementById('authBtnText').textContent;
-            document.getElementById('authBtnText').innerHTML = '<span class="loading-spinner"></span> Please wait...';
-            
-            try {
-                if (authMode === 'login') {
-                    await loginUser(username, pin);
+
+            if (!/^\d{4}$/.test(pin)) {
+                alert('PIN must be 4 digits');
+                return;
+            }
+
+            const userId = username;
+            const hashedPin = hashPin(pin);
+
+            db.collection('users').doc(userId).get().then(doc => {
+                if (doc.exists) {
+                    alert('Username already taken. Please choose another.');
                 } else {
-                    await signupUser(username, pin);
-                }
-            } catch (error) {
-                console.error('Auth error:', error);
-                showAuthError('Connection error. Please try again.');
-            } finally {
-                btn.disabled = false;
-                document.getElementById('authBtnText').textContent = originalText;
-            }
-        }
-
-        async function loginUser(username, pin) {
-            try {
-                // Check if user exists
-                const userDoc = await db.collection('students').doc(username).get();
-                
-                if (!userDoc.exists) {
-                    showAuthError('User not found. Please sign up first.');
-                    return;
-                }
-                
-                const userData = userDoc.data();
-                
-                // Verify PIN (in production, use proper hashing)
-                if (userData.pin !== pin) {
-                    showAuthError('Incorrect PIN. Please try again.');
-                    return;
-                }
-                
-                // Success
-                currentUser = {
-                    username: username,
-                    data: userData
-                };
-                
-                // Update last login
-                await db.collection('students').doc(username).update({
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                enterApp();
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                showAuthError('Login failed. Please try again.');
-            }
-        }
-
-        async function signupUser(username, pin) {
-            try {
-                // Check if username already exists
-                const existingDoc = await db.collection('students').doc(username).get();
-                
-                if (existingDoc.exists) {
-                    showAuthError('Username already taken. Please choose another.');
-                    return;
-                }
-                
-                // Create new user
-                await db.collection('students').doc(username).set({
-                    username: username,
-                    pin: pin, // In production, hash this!
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
-                    favorites: [],
-                    mistakes: [],
-                    history: []
-                });
-                
-                // Success
-                currentUser = {
-                    username: username,
-                    data: {
+                    db.collection('users').doc(userId).set({
                         username: username,
+                        pinHash: hashedPin,
+                        createdAt: new Date(),
                         favorites: [],
-                        mistakes: [],
-                        history: []
-                    }
-                };
-                
-                showAuthSuccess('Account created successfully! Logging in...');
-                
-                setTimeout(() => {
-                    enterApp();
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Signup error:', error);
-                showAuthError('Failed to create account. Please try again.');
+                        bookmarks: [],
+                        history: [],
+                        lastActive: new Date()
+                    }).then(() => {
+                        alert('Account created! Please login.');
+                        showLoginTab('login');
+                        document.querySelector('#login-screen .nav-tab').click();
+                    });
+                }
+            }).catch(err => {
+                console.error('Signup error:', err);
+                alert('Error creating account. Please try again.');
+            });
+        }
+
+        // Login
+        function login() {
+            const username = document.getElementById('login-username').value.trim().toLowerCase();
+            const pin = document.getElementById('login-pin').value;
+
+            if (!username || pin.length !== 4) {
+                alert('Please enter username and PIN');
+                return;
             }
+
+            const userId = username;
+            const hashedPin = hashPin(pin);
+
+            db.collection('users').doc(userId).get().then(doc => {
+                if (doc.exists && doc.data().pinHash === hashedPin) {
+                    currentUser = { id: userId, ...doc.data() };
+                    localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+
+                    // Update last active
+                    db.collection('users').doc(userId).update({ lastActive: new Date() });
+
+                    showMainApp();
+                } else {
+                    alert('Invalid username or PIN');
+                }
+            }).catch(err => {
+                console.error('Login error:', err);
+                alert('Error logging in. Please try again.');
+            });
         }
 
-        function showAuthError(message) {
-            const errorDiv = document.getElementById('authError');
-            errorDiv.textContent = message;
-            errorDiv.classList.remove('hidden');
-        }
-
-        function showAuthSuccess(message) {
-            const successDiv = document.getElementById('authSuccess');
-            successDiv.textContent = message;
-            successDiv.classList.remove('hidden');
-        }
-
-        function enterApp() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('userName').textContent = currentUser.username;
-            
-            // Clear form
-            document.getElementById('authUsername').value = '';
-            document.getElementById('authPin').value = '';
-            
-            navigateToRoot();
-        }
-
+        // Logout
         function logout() {
             currentUser = null;
+            localStorage.removeItem('medquiz_user');
+            location.reload();
+        }
+
+        // Show Main App
+        function showMainApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('user-name').textContent = currentUser.username;
+            loadHome();
+        }
+
+        // Main Tabs
+        function showMainTab(tab) {
+            document.querySelectorAll('#main-app .nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#browse-tab, #favorites-tab, #bookmarks-tab, #mistakes-tab, #history-tab').forEach(t => t.classList.add('hidden'));
+
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.remove('hidden');
+
+            if (tab === 'favorites') loadFavorites();
+            if (tab === 'bookmarks') loadBookmarksTab();
+            if (tab === 'mistakes') loadMistakes();
+            if (tab === 'history') loadHistory();
+        }
+
+        // Browse Content - Fixed for nested folders
+        function loadHome() {
             currentPath = [];
-            if (quizState.timerInterval) {
-                clearInterval(quizState.timerInterval);
-            }
-            
-            document.getElementById('mainApp').classList.add('hidden');
-            document.getElementById('quizInterface').classList.add('hidden');
-            document.getElementById('resultsScreen').classList.add('hidden');
-            document.getElementById('loginScreen').classList.remove('hidden');
-            
-            // Reset auth form
-            document.getElementById('authError').classList.add('hidden');
-            document.getElementById('authSuccess').classList.add('hidden');
+            updateBreadcrumb();
+
+            db.collection('folders').where('parentId', '==', null).get().then(snapshot => {
+                let html = '<div class="folders-grid">';
+
+                if (snapshot.empty) {
+                    html += '<p>No content available yet.</p>';
+                } else {
+                    snapshot.forEach(doc => {
+                        const folder = doc.data();
+                        html += `
+                            <div class="folder-card" onclick="openFolder('${doc.id}', '${folder.name}')">
+                                <div class="folder-icon">📁</div>
+                                <div class="folder-name">${folder.name}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                html += '</div>';
+                document.getElementById('browse-content').innerHTML = html;
+            });
         }
 
-        // ==================== NAVIGATION ====================
-
-        function navigateToRoot() {
-            currentPath = [];
-            updateBreadcrumb();
-            loadContent();
+        function openFolder(folderId, folderName) {
+            currentPath.push({ id: folderId, name: folderName, type: 'folder' });
+            loadCurrentFolder();
         }
 
-        function navigateToFolder(folderId, folderName) {
-            currentPath.push({ id: folderId, name: folderName });
+        function loadCurrentFolder() {
             updateBreadcrumb();
-            loadContent();
-        }
+            const current = currentPath[currentPath.length - 1];
 
-        function navigateUp(index) {
-            currentPath = currentPath.slice(0, index + 1);
-            updateBreadcrumb();
-            loadContent();
+            // Load subfolders
+            db.collection('folders').where('parentId', '==', current.id).get().then(foldersSnap => {
+                // Load quizzes
+                db.collection('quizzes').where('folderId', '==', current.id).get().then(quizzesSnap => {
+                    // Load files
+                    db.collection('files').where('folderId', '==', current.id).get().then(filesSnap => {
+                        let html = '<div class="folders-grid">';
+
+                        // Folders
+                        if (!foldersSnap.empty) {
+                            foldersSnap.forEach(doc => {
+                                const folder = doc.data();
+                                html += `
+                                    <div class="folder-card" onclick="openFolder('${doc.id}', '${folder.name}')">
+                                        <div class="folder-icon">📁</div>
+                                        <div class="folder-name">${folder.name}</div>
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        // Quizzes
+                        if (!quizzesSnap.empty) {
+                            quizzesSnap.forEach(doc => {
+                                const quiz = doc.data();
+                                const isFav = currentUser.favorites && currentUser.favorites.includes(doc.id);
+                                html += `
+                                    <div class="quiz-card" style="position: relative;" onclick="startQuiz('${doc.id}', '${quiz.title}')">
+                                        <button class="favorite-btn" onclick="event.stopPropagation(); toggleFavorite('${doc.id}')">
+                                            ${isFav ? '⭐' : '☆'}
+                                        </button>
+                                        <h3>📝 ${quiz.title}</h3>
+                                        <p>${quiz.questionCount || 0} questions</p>
+                                        <button class="btn" style="margin-top: 15px;">Start Quiz</button>
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        // Files
+                        if (!filesSnap.empty) {
+                            filesSnap.forEach(doc => {
+                                const file = doc.data();
+                                const icon = file.name.endsWith('.pdf') ? '📄' : 
+                                           file.name.endsWith('.ppt') || file.name.endsWith('.pptx') ? '📊' : 
+                                           file.name.endsWith('.doc') || file.name.endsWith('.docx') ? '📝' : '📎';
+                                html += `
+                                    <div class="file-card" onclick="viewFile('${doc.id}', '${file.url}', '${file.name}')">
+                                        <div style="font-size: 2em; margin-bottom: 10px;">${icon}</div>
+                                        <h4>${file.name}</h4>
+                                        <p style="font-size: 0.9em; color: #666;">${(file.size / 1024).toFixed(1)} KB</p>
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        if (foldersSnap.empty && quizzesSnap.empty && filesSnap.empty) {
+                            html += '<p>This folder is empty.</p>';
+                        }
+
+                        html += '</div>';
+                        document.getElementById('browse-content').innerHTML = html;
+                    });
+                });
+            });
         }
 
         function updateBreadcrumb() {
-            let html = '';
-            currentPath.forEach((folder, index) => {
-                html += ` <span class="text-gray-400">/</span> 
-                    <button onclick="navigateUp(${index})" class="text-indigo-600 hover:underline font-medium">${folder.name}</button>`;
-            });
-            document.getElementById('breadcrumb').innerHTML = html;
-        }
+            const breadcrumb = document.getElementById('breadcrumb');
+            let html = '<a onclick="goHome()">🏠 Home</a>';
 
-        function switchTab(tab) {
-            currentTab = tab;
-            
-            // Update UI
-            ['browse', 'favorites', 'mistakes', 'history'].forEach(t => {
-                const btn = document.getElementById(`tab-${t}`);
-                if (t === tab) {
-                    btn.className = 'pb-3 px-2 whitespace-nowrap font-medium text-indigo-600 border-b-2 border-indigo-600';
+            currentPath.forEach((item, index) => {
+                html += ' > ';
+                if (index === currentPath.length - 1) {
+                    html += `<strong>${item.name}</strong>`;
                 } else {
-                    btn.className = 'pb-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap hover:text-indigo-600';
+                    html += `<a onclick="navigateTo(${index})">${item.name}</a>`;
                 }
             });
-            
-            loadContent();
+
+            breadcrumb.innerHTML = html;
         }
 
-        // ==================== CONTENT LOADING ====================
+        function navigateTo(index) {
+            currentPath = currentPath.slice(0, index + 1);
+            loadCurrentFolder();
+        }
 
-        async function loadContent() {
-            const container = document.getElementById('contentArea');
-            container.innerHTML = '<div class="flex justify-center items-center h-64"><div class="loading-spinner mr-2"></div><span>Loading...</span></div>';
-            
-            try {
-                if (currentTab === 'browse') {
-                    await loadBrowseContent(container);
-                } else if (currentTab === 'favorites') {
-                    await loadFavorites(container);
-                } else if (currentTab === 'mistakes') {
-                    await loadMistakes(container);
-                } else if (currentTab === 'history') {
-                    await loadHistory(container);
-                }
-            } catch (error) {
-                console.error('Error loading content:', error);
-                container.innerHTML = `<div class="text-center text-red-500 p-8">Error: ${error.message}</div>`;
+        function goHome() {
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            stopTimer();
+            loadHome();
+        }
+
+        // Search - Fixed to search all content
+        function searchContent() {
+            const query = document.getElementById('search-box').value.toLowerCase().trim();
+            if (!query) {
+                if (currentPath.length === 0) loadHome();
+                else loadCurrentFolder();
+                return;
             }
-        }
 
-        async function loadBrowseContent(container) {
-            try {
-                let query = db.collection('folders');
-                
-                if (currentPath.length === 0) {
-                    query = query.where('parentId', '==', null);
-                } else {
-                    query = query.where('parentId', '==', currentPath[currentPath.length - 1].id);
-                }
-                
-                const snapshot = await query.get();
-                
-                if (snapshot.empty && currentPath.length > 0) {
-                    await loadFolderContents(container);
-                    return;
-                }
-                
-                let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 fade-in">';
-                
+            let resultsHtml = '<h3>Search Results:</h3><div class="folders-grid">';
+            let hasResults = false;
+
+            // Search folders
+            db.collection('folders').get().then(snapshot => {
                 snapshot.forEach(doc => {
                     const folder = doc.data();
-                    html += `
-                        <div onclick="navigateToFolder('${doc.id}', '${folder.name}')" 
-                            class="folder-card glass-card p-6 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border-2 border-transparent hover:border-indigo-200 dark:hover:border-indigo-800">
-                            <div class="flex items-center gap-4">
-                                <div class="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-folder text-3xl text-indigo-600"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <h3 class="font-bold text-lg truncate">${folder.name}</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 truncate">${folder.description || 'Click to open'}</p>
-                                </div>
+                    if (folder.name.toLowerCase().includes(query)) {
+                        hasResults = true;
+                        resultsHtml += `
+                            <div class="folder-card" onclick="openFolder('${doc.id}', '${folder.name}')">
+                                <div class="folder-icon">📁</div>
+                                <div class="folder-name">${folder.name}</div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }
                 });
-                
-                html += '</div>';
-                container.innerHTML = html;
-                
-            } catch (error) {
-                throw error;
-            }
+
+                // Search quizzes
+                return db.collection('quizzes').get();
+            }).then(snapshot => {
+                snapshot.forEach(doc => {
+                    const quiz = doc.data();
+                    if (quiz.title.toLowerCase().includes(query)) {
+                        hasResults = true;
+                        const isFav = currentUser.favorites && currentUser.favorites.includes(doc.id);
+                        resultsHtml += `
+                            <div class="quiz-card" style="position: relative;" onclick="startQuiz('${doc.id}', '${quiz.title}')">
+                                <button class="favorite-btn" onclick="event.stopPropagation(); toggleFavorite('${doc.id}')">
+                                    ${isFav ? '⭐' : '☆'}
+                                </button>
+                                <h3>📝 ${quiz.title}</h3>
+                                <p>${quiz.questionCount || 0} questions</p>
+                            </div>
+                        `;
+                    }
+                });
+
+                // Search files
+                return db.collection('files').get();
+            }).then(snapshot => {
+                snapshot.forEach(doc => {
+                    const file = doc.data();
+                    if (file.name.toLowerCase().includes(query)) {
+                        hasResults = true;
+                        const icon = file.name.endsWith('.pdf') ? '📄' : 
+                                   file.name.endsWith('.ppt') || file.name.endsWith('.pptx') ? '📊' : 
+                                   file.name.endsWith('.doc') || file.name.endsWith('.docx') ? '📝' : '📎';
+                        resultsHtml += `
+                            <div class="file-card" onclick="viewFile('${doc.id}', '${file.url}', '${file.name}')">
+                                <div style="font-size: 2em; margin-bottom: 10px;">${icon}</div>
+                                <h4>${file.name}</h4>
+                            </div>
+                        `;
+                    }
+                });
+
+                resultsHtml += '</div>';
+                if (!hasResults) {
+                    resultsHtml = '<p>No results found.</p>';
+                }
+                document.getElementById('browse-content').innerHTML = resultsHtml;
+            });
         }
 
-        async function loadFolderContents(container) {
-            const currentFolderId = currentPath[currentPath.length - 1].id;
-            
-            try {
-                // Get quizzes and files in parallel
-                const [quizzesSnap, filesSnap] = await Promise.all([
-                    db.collection('quizzes').where('folderId', '==', currentFolderId).get(),
-                    db.collection('files').where('folderId', '==', currentFolderId).get()
-                ]);
-                
-                let html = '<div class="space-y-6 fade-in">';
-                
-                // Quizzes Section
-                if (!quizzesSnap.empty) {
-                    html += '<div><h3 class="text-xl font-bold mb-4 flex items-center text-green-600"><i class="fas fa-question-circle mr-2"></i>Quizzes</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
-                    
-                    quizzesSnap.forEach(doc => {
+        // File Viewer
+        function viewFile(fileId, url, name) {
+            const viewer = document.getElementById('file-viewer');
+            const frame = document.getElementById('file-frame');
+            const downloadLink = document.getElementById('download-link');
+
+            frame.src = url;
+            downloadLink.href = url;
+            downloadLink.download = name;
+            viewer.style.display = 'flex';
+        }
+
+        function closeFileViewer() {
+            document.getElementById('file-viewer').style.display = 'none';
+            document.getElementById('file-frame').src = '';
+        }
+
+        // Favorites
+        function toggleFavorite(quizId) {
+            const favorites = currentUser.favorites || [];
+            const index = favorites.indexOf(quizId);
+
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(quizId);
+            }
+
+            currentUser.favorites = favorites;
+            localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+
+            db.collection('users').doc(currentUser.id).update({ favorites });
+
+            // Refresh current view
+            if (currentPath.length === 0) loadHome();
+            else loadCurrentFolder();
+        }
+
+        function loadFavorites() {
+            const favorites = currentUser.favorites || [];
+            if (favorites.length === 0) {
+                document.getElementById('favorites-content').innerHTML = '<p>No favorites yet.</p>';
+                return;
+            }
+
+            let html = '<div class="folders-grid">';
+            let loaded = 0;
+
+            favorites.forEach(quizId => {
+                db.collection('quizzes').doc(quizId).get().then(doc => {
+                    if (doc.exists) {
                         const quiz = doc.data();
                         html += `
-                            <div onclick="startQuiz('${doc.id}')" 
-                                class="folder-card glass-card p-5 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 border-l-4 border-green-500">
-                                <div class="flex justify-between items-start">
-                                    <div class="min-w-0">
-                                        <h4 class="font-bold text-lg truncate">${quiz.title}</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${quiz.questionCount || 0} questions • ${quiz.duration || 30} mins</p>
-                                    </div>
-                                    <i class="fas fa-play-circle text-3xl text-green-500 flex-shrink-0"></i>
-                                </div>
+                            <div class="quiz-card" onclick="startQuiz('${doc.id}', '${quiz.title}')">
+                                <h3>📝 ${quiz.title}</h3>
+                                <p>${quiz.questionCount || 0} questions</p>
                             </div>
                         `;
-                    });
-                    
-                    html += '</div></div>';
-                }
-                
-                // Files Section
-                if (!filesSnap.empty) {
-                    html += '<div><h3 class="text-xl font-bold mb-4 flex items-center text-orange-600"><i class="fas fa-file mr-2"></i>Files</h3><div class="space-y-2">';
-                    
-                    filesSnap.forEach(doc => {
-                        const file = doc.data();
-                        const icon = getFileIcon(file.type);
-                        html += `
-                            <div onclick="viewFile('${doc.id}', '${escapeHtml(file.name)}', '${file.url}', '${file.type}')" 
-                                class="flex items-center gap-4 p-4 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition border border-gray-200 dark:border-gray-700">
-                                <i class="${icon} text-2xl text-orange-500 flex-shrink-0"></i>
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="font-medium truncate">${file.name}</h4>
-                                    <p class="text-sm text-gray-500">${file.size || 'Unknown size'}</p>
-                                </div>
-                                <i class="fas fa-chevron-right text-gray-400 flex-shrink-0"></i>
-                            </div>
-                        `;
-                    });
-                    
-                    html += '</div></div>';
-                }
-                
-                if (quizzesSnap.empty && filesSnap.empty) {
-                    html += '<div class="text-center text-gray-500 py-12"><i class="fas fa-folder-open text-5xl mb-4 text-gray-300"></i><p class="text-lg">This folder is empty</p></div>';
-                }
-                
-                html += '</div>';
-                container.innerHTML = html;
-                
-            } catch (error) {
-                throw error;
-            }
-        }
-
-        function getFileIcon(type) {
-            if (!type) return 'fas fa-file';
-            if (type.includes('pdf')) return 'fas fa-file-pdf text-red-500';
-            if (type.includes('word') || type.includes('document')) return 'fas fa-file-word text-blue-500';
-            if (type.includes('powerpoint') || type.includes('presentation')) return 'fas fa-file-powerpoint text-orange-500';
-            if (type.includes('image')) return 'fas fa-file-image text-purple-500';
-            return 'fas fa-file text-gray-500';
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // ==================== QUIZ FUNCTIONS ====================
-
-        async function startQuiz(quizId) {
-            try {
-                const quizDoc = await db.collection('quizzes').doc(quizId).get();
-                if (!quizDoc.exists) {
-                    alert('Quiz not found!');
-                    return;
-                }
-                
-                const quizData = quizDoc.data();
-                const questionsSnapshot = await db.collection('quizzes').doc(quizId).collection('questions').get();
-                
-                if (questionsSnapshot.empty) {
-                    alert('No questions found in this quiz!');
-                    return;
-                }
-                
-                currentQuiz = { id: quizId, ...quizData };
-                quizState.questions = [];
-                quizState.answers = {};
-                quizState.bookmarks.clear();
-                quizState.flagged.clear();
-                quizState.currentIndex = 0;
-                quizState.timeRemaining = (quizData.duration || 30) * 60;
-                
-                questionsSnapshot.forEach(doc => {
-                    quizState.questions.push({ id: doc.id, ...doc.data() });
+                    }
+                    loaded++;
+                    if (loaded === favorites.length) {
+                        html += '</div>';
+                        document.getElementById('favorites-content').innerHTML = html;
+                    }
                 });
-                
-                // Shuffle questions if enabled
-                if (quizData.shuffle !== false) {
-                    quizState.questions.sort(() => Math.random() - 0.5);
-                }
-                
-                document.getElementById('mainApp').classList.add('hidden');
-                document.getElementById('quizInterface').classList.remove('hidden');
-                document.getElementById('quizTitle').textContent = quizData.title;
-                document.getElementById('totalQNum').textContent = quizState.questions.length;
-                
-                startTimer();
-                displayQuestion();
-                
-            } catch (error) {
-                console.error('Error starting quiz:', error);
-                alert('Error starting quiz. Please try again.');
+            });
+        }
+
+        // Bookmarks
+        function toggleBookmark(questionIndex) {
+            const q = currentQuestions[questionIndex];
+            const bookmark = {
+                quizId: currentQuizId,
+                quizTitle: currentQuizTitle,
+                question: q.question,
+                questionIndex: questionIndex,
+                timestamp: new Date()
+            };
+
+            let bookmarks = currentUser.bookmarks || [];
+            const existingIndex = bookmarks.findIndex(b => b.quizId === currentQuizId && b.questionIndex === questionIndex);
+
+            if (existingIndex > -1) {
+                bookmarks.splice(existingIndex, 1);
+            } else {
+                bookmarks.push(bookmark);
+            }
+
+            currentUser.bookmarks = bookmarks;
+            localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+            db.collection('users').doc(currentUser.id).update({ bookmarks });
+
+            updateBookmarkButton(questionIndex);
+        }
+
+        function updateBookmarkButton(index) {
+            const btn = document.getElementById(`bookmark-btn-${index}`);
+            if (btn) {
+                const bookmarks = currentUser.bookmarks || [];
+                const isBookmarked = bookmarks.some(b => b.quizId === currentQuizId && b.questionIndex === index);
+                btn.innerHTML = isBookmarked ? '🔖' : '🔖';
+                btn.style.opacity = isBookmarked ? '1' : '0.3';
             }
         }
 
+        function loadBookmarks() {
+            if (currentUser) {
+                currentUser.bookmarks = currentUser.bookmarks || [];
+            }
+        }
+
+        function loadBookmarksTab() {
+            const bookmarks = currentUser.bookmarks || [];
+            if (bookmarks.length === 0) {
+                document.getElementById('bookmarks-content').innerHTML = '<p>No bookmarks yet.</p>';
+                return;
+            }
+
+            let html = '';
+            bookmarks.forEach((b, i) => {
+                html += `
+                    <div class="question-card">
+                        <h4>${b.quizTitle}</h4>
+                        <p><strong>Q:</strong> ${b.question}</p>
+                        <button class="btn btn-small" onclick="goToBookmarkedQuestion('${b.quizId}', ${b.questionIndex})">Go to Question</button>
+                        <button class="btn btn-small btn-secondary" onclick="removeBookmark(${i})">Remove</button>
+                    </div>
+                `;
+            });
+            document.getElementById('bookmarks-content').innerHTML = html;
+        }
+
+        function goToBookmarkedQuestion(quizId, questionIndex) {
+            db.collection('quizzes').doc(quizId).get().then(doc => {
+                if (doc.exists) {
+                    const quiz = doc.data();
+                    startQuiz(quizId, quiz.title, questionIndex);
+                }
+            });
+        }
+
+        function removeBookmark(index) {
+            let bookmarks = currentUser.bookmarks || [];
+            bookmarks.splice(index, 1);
+            currentUser.bookmarks = bookmarks;
+            localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+            db.collection('users').doc(currentUser.id).update({ bookmarks });
+            loadBookmarksTab();
+        }
+
+        // Flag Question
+        function toggleFlag(index) {
+            if (flaggedQuestions.has(index)) {
+                flaggedQuestions.delete(index);
+            } else {
+                flaggedQuestions.add(index);
+            }
+            updateFlagButton(index);
+            updateQuestionNav();
+        }
+
+        function updateFlagButton(index) {
+            const btn = document.getElementById(`flag-btn-${index}`);
+            if (btn) {
+                btn.innerHTML = flaggedQuestions.has(index) ? '🚩' : '🏳️';
+                btn.style.color = flaggedQuestions.has(index) ? '#ff9800' : '#666';
+            }
+        }
+
+        // Quiz - Optimized for no lag
+        function startQuiz(quizId, title, startIndex = 0) {
+            currentQuizId = quizId;
+            currentQuizTitle = title;
+            currentPath.push({ id: quizId, name: title, type: 'quiz' });
+
+            // Show loading
+            document.getElementById('browse-content').innerHTML = '<p>Loading quiz...</p>';
+
+            db.collection('quizzes').doc(quizId).collection('questions').get().then(snapshot => {
+                currentQuestions = [];
+                snapshot.forEach(doc => {
+                    currentQuestions.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (currentQuestions.length === 0) {
+                    alert('No questions in this quiz');
+                    return;
+                }
+
+                // Shuffle questions once
+                currentQuestions.sort(() => Math.random() - 0.5);
+
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+                document.getElementById('quiz-title').textContent = title;
+
+                // Reset quiz state
+                currentQuestionIndex = startIndex;
+                userAnswers = {};
+                flaggedQuestions.clear();
+                correctCount = 0;
+                quizMistakes = [];
+
+                startTimer();
+                renderQuestionNav();
+                showQuestion(currentQuestionIndex);
+                startAutoSave();
+
+                // Show zoom controls
+                document.getElementById('zoom-controls').style.display = 'flex';
+            });
+        }
+
+        function renderQuestionNav() {
+            let html = '';
+            for (let i = 0; i < currentQuestions.length; i++) {
+                const isAnswered = userAnswers[i] !== undefined;
+                const isFlagged = flaggedQuestions.has(i);
+                let className = 'question-number';
+                if (isAnswered) className += ' answered';
+                if (isFlagged) className += ' flagged';
+                html += `<span class="${className}" onclick="jumpToQuestion(${i})" title="Question ${i + 1}">${i + 1}</span>`;
+            }
+            document.getElementById('question-nav').innerHTML = html;
+        }
+
+        function updateQuestionNav() {
+            renderQuestionNav();
+        }
+
+        function jumpToQuestion(index) {
+            currentQuestionIndex = index;
+            showQuestion(index);
+        }
+
+        function showQuestion(index) {
+            const q = currentQuestions[index];
+            const isBookmarked = (currentUser.bookmarks || []).some(b => b.quizId === currentQuizId && b.questionIndex === index);
+
+            let html = `
+                <div class="question-card" style="font-size: ${fontSize}px;">
+                    <button class="bookmark-btn" id="bookmark-btn-${index}" onclick="event.stopPropagation(); toggleBookmark(${index})" title="Bookmark" style="opacity: ${isBookmarked ? '1' : '0.3'};">
+                        🔖
+                    </button>
+                    <button class="flag-btn" id="flag-btn-${index}" onclick="event.stopPropagation(); toggleFlag(${index})" title="Flag for review" style="color: ${flaggedQuestions.has(index) ? '#ff9800' : '#666'};">
+                        ${flaggedQuestions.has(index) ? '🚩' : '🏳️'}
+                    </button>
+                    <h3>Question ${index + 1} of ${currentQuestions.length}: ${q.question}</h3>
+                    <div id="options-${index}">
+            `;
+
+            q.options.forEach((opt, i) => {
+                const isSelected = userAnswers[index] === i;
+                const isCorrect = i === q.correctAnswer;
+                const isAnswered = userAnswers[index] !== undefined;
+
+                let className = 'option';
+                if (isAnswered) {
+                    if (isCorrect) className += ' correct';
+                    else if (isSelected) className += ' wrong';
+                } else if (isSelected) {
+                    className += ' selected';
+                }
+
+                html += `
+                    <div class="${className}" onclick="selectAnswer(${index}, ${i}, ${q.correctAnswer})" 
+                         style="${isAnswered && !isCorrect && !isSelected ? 'opacity: 0.6;' : ''}">
+                        ${String.fromCharCode(65 + i)}) ${opt}
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                    <div id="explanation-${index}" style="display: ${userAnswers[index] !== undefined ? 'block' : 'none'}; margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 10px;">
+                        <strong>Explanation:</strong> ${q.explanation || 'No explanation available'}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('questions-container').innerHTML = html;
+
+            // Update progress bar
+            const progress = ((index + 1) / currentQuestions.length) * 100;
+            document.getElementById('progress-bar').style.width = progress + '%';
+        }
+
+        function selectAnswer(qIndex, selected, correct) {
+            if (userAnswers[qIndex] !== undefined) return; // Already answered
+
+            userAnswers[qIndex] = selected;
+
+            const options = document.getElementById(`options-${qIndex}`).children;
+
+            if (selected === correct) {
+                options[selected].classList.add('correct');
+                correctCount++;
+            } else {
+                options[selected].classList.add('wrong');
+                options[correct].classList.add('correct');
+
+                quizMistakes.push({
+                    question: currentQuestions[qIndex].question,
+                    yourAnswer: currentQuestions[qIndex].options[selected],
+                    correctAnswer: currentQuestions[qIndex].options[correct],
+                    explanation: currentQuestions[qIndex].explanation,
+                    quizTitle: currentQuizTitle
+                });
+            }
+
+            document.getElementById(`explanation-${qIndex}`).style.display = 'block';
+            updateQuestionNav();
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < currentQuestions.length - 1) {
+                currentQuestionIndex++;
+                showQuestion(currentQuestionIndex);
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showQuestion(currentQuestionIndex);
+            }
+        }
+
+        // Timer
         function startTimer() {
+            timeRemaining = 1800; // 30 minutes
             updateTimerDisplay();
-            quizState.timerInterval = setInterval(() => {
-                quizState.timeRemaining--;
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
                 updateTimerDisplay();
-                
-                if (quizState.timeRemaining <= 0) {
-                    submitQuiz();
+
+                if (timeRemaining <= 300) { // 5 minutes warning
+                    document.getElementById('timer').classList.add('warning');
+                }
+
+                if (timeRemaining <= 0) {
+                    finishQuiz();
                 }
             }, 1000);
         }
 
+        function stopTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('timer').classList.remove('warning');
+        }
+
         function updateTimerDisplay() {
-            const minutes = Math.floor(quizState.timeRemaining / 60);
-            const seconds = quizState.timeRemaining % 60;
-            const display = document.getElementById('timeRemaining');
-            display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
-            const timerDiv = document.getElementById('timer');
-            if (quizState.timeRemaining < 300) {
-                timerDiv.classList.add('timer-warning');
-            } else {
-                timerDiv.classList.remove('timer-warning');
-            }
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            document.getElementById('timer-text').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
         }
 
-        function displayQuestion() {
-            const q = quizState.questions[quizState.currentIndex];
-            
-            document.getElementById('currentQNum').textContent = quizState.currentIndex + 1;
-            document.getElementById('questionText').innerHTML = escapeHtml(q.text);
-            document.getElementById('bookmarkCount').textContent = quizState.bookmarks.size;
-            
-            // Update progress
-            const progress = ((quizState.currentIndex + 1) / quizState.questions.length) * 100;
-            document.getElementById('quizProgress').style.width = `${progress}%`;
-            
-            // Update bookmark/flag buttons
-            const bookmarkBtn = document.getElementById('bookmarkBtn');
-            const flagBtn = document.getElementById('flagBtn');
-            
-            bookmarkBtn.innerHTML = `<i class="${quizState.bookmarks.has(q.id) ? 'fas text-yellow-500' : 'far text-gray-400'} fa-bookmark text-xl"></i>`;
-            flagBtn.innerHTML = `<i class="${quizState.flagged.has(q.id) ? 'fas text-red-500' : 'far text-gray-400'} fa-flag text-xl"></i>`;
-            
-            // Generate options
-            let optionsHtml = '';
-            const labels = ['A', 'B', 'C', 'D', 'E'];
-            
-            q.options.forEach((opt, idx) => {
-                if (!opt) return;
-                const isSelected = quizState.answers[q.id] === idx;
-                optionsHtml += `
-                    <div onclick="selectAnswer(${idx})" 
-                        class="p-4 rounded-lg border-2 cursor-pointer transition ${isSelected ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'} flex items-center justify-center font-bold text-sm">
-                                ${labels[idx]}
-                            </div>
-                            <span class="flex-1">${escapeHtml(opt)}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('optionsContainer').innerHTML = optionsHtml;
-            
-            // Update navigation buttons
-            document.getElementById('prevBtn').disabled = quizState.currentIndex === 0;
-            const nextBtn = document.getElementById('nextBtn');
-            nextBtn.innerHTML = quizState.currentIndex === quizState.questions.length - 1 ? 
-                'Finish<i class="fas fa-check ml-2"></i>' : 'Next<i class="fas fa-chevron-right ml-2"></i>';
-        }
-
-        function selectAnswer(index) {
-            const q = quizState.questions[quizState.currentIndex];
-            quizState.answers[q.id] = index;
-            displayQuestion();
-        }
-
-        function previousQuestion() {
-            if (quizState.currentIndex > 0) {
-                quizState.currentIndex--;
-                displayQuestion();
-            }
-        }
-
-        function nextQuestion() {
-            if (quizState.currentIndex < quizState.questions.length - 1) {
-                quizState.currentIndex++;
-                displayQuestion();
-            } else {
-                submitQuiz();
-            }
-        }
-
-        function toggleBookmark() {
-            const q = quizState.questions[quizState.currentIndex];
-            if (quizState.bookmarks.has(q.id)) {
-                quizState.bookmarks.delete(q.id);
-            } else {
-                quizState.bookmarks.add(q.id);
-            }
-            displayQuestion();
-        }
-
-        function toggleFlag() {
-            const q = quizState.questions[quizState.currentIndex];
-            if (quizState.flagged.has(q.id)) {
-                quizState.flagged.delete(q.id);
-            } else {
-                quizState.flagged.add(q.id);
-            }
-            displayQuestion();
-        }
-
-        async function saveProgress() {
-            if (!currentUser) return;
-            
-            try {
-                await db.collection('students').doc(currentUser.username).collection('savedProgress').doc(currentQuiz.id).set({
-                    quizId: currentQuiz.id,
-                    answers: quizState.answers,
-                    bookmarks: Array.from(quizState.bookmarks),
-                    flagged: Array.from(quizState.flagged),
-                    currentIndex: quizState.currentIndex,
-                    timeRemaining: quizState.timeRemaining,
-                    savedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                showNotification('Progress saved!', 'success');
-            } catch (error) {
-                showNotification('Failed to save progress', 'error');
-            }
-        }
-
-        async function submitQuiz() {
-            clearInterval(quizState.timerInterval);
-            
-            let correct = 0;
-            let wrong = 0;
-            const mistakes = [];
-            
-            quizState.questions.forEach(q => {
-                const userAnswer = quizState.answers[q.id];
-                if (userAnswer === q.correctAnswer) {
-                    correct++;
-                } else {
-                    wrong++;
-                    mistakes.push({
-                        question: q.text,
-                        yourAnswer: userAnswer !== undefined ? q.options[userAnswer] : 'Not answered',
-                        correctAnswer: q.options[q.correctAnswer],
-                        explanation: q.explanation || 'No explanation provided'
-                    });
+        // Auto Save
+        function startAutoSave() {
+            autoSaveInterval = setInterval(() => {
+                if (currentQuizId) {
+                    const progress = {
+                        quizId: currentQuizId,
+                        answers: userAnswers,
+                        timeRemaining: timeRemaining,
+                        timestamp: new Date()
+                    };
+                    localStorage.setItem('quiz_progress_' + currentUser.id, JSON.stringify(progress));
                 }
-            });
-            
-            const score = Math.round((correct / quizState.questions.length) * 100);
-            
+            }, 30000); // Save every 30 seconds
+        }
+
+        function stopAutoSave() {
+            clearInterval(autoSaveInterval);
+        }
+
+        function finishQuiz() {
+            stopTimer();
+            stopAutoSave();
+            localStorage.removeItem('quiz_progress_' + currentUser.id);
+            document.getElementById('timer').classList.remove('warning');
+            document.getElementById('zoom-controls').style.display = 'none';
+
+            const total = currentQuestions.length;
+            const answered = Object.keys(userAnswers).length;
+            const percent = Math.round((correctCount / total) * 100);
+
             // Save to history
-            try {
-                await db.collection('students').doc(currentUser.username).collection('history').add({
-                    quizId: currentQuiz.id,
-                    quizTitle: currentQuiz.title,
-                    score: score,
-                    correct: correct,
-                    wrong: wrong,
-                    total: quizState.questions.length,
-                    completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    timeSpent: ((currentQuiz.duration || 30) * 60) - quizState.timeRemaining
-                });
-                
-                // Save mistakes
-                if (mistakes.length > 0) {
-                    const userRef = db.collection('students').doc(currentUser.username);
-                    const existingMistakes = currentUser.data.mistakes || [];
-                    const newMistakes = [...existingMistakes, ...mistakes].slice(-20); // Keep last 20
-                    await userRef.update({ mistakes: newMistakes });
-                    currentUser.data.mistakes = newMistakes;
-                }
-            } catch (error) {
-                console.error('Error saving results:', error);
-            }
-            
-            showResults(score, correct, wrong, mistakes);
-        }
+            const history = currentUser.history || [];
+            history.push({
+                quizId: currentQuizId,
+                quizName: currentQuizTitle,
+                score: correctCount,
+                total: total,
+                answered: answered,
+                percent: percent,
+                date: new Date(),
+                mistakes: quizMistakes,
+                timeSpent: 1800 - timeRemaining
+            });
 
-        function showResults(score, correct, wrong, mistakes) {
-            document.getElementById('quizInterface').classList.add('hidden');
-            document.getElementById('resultsScreen').classList.remove('hidden');
-            
-            document.getElementById('scorePercent').textContent = `${score}%`;
-            document.getElementById('correctCount').textContent = correct;
-            document.getElementById('wrongCount').textContent = wrong;
-            
-            const emoji = score >= 80 ? '🎉' : score >= 60 ? '😊' : score >= 40 ? '😐' : '😢';
-            document.getElementById('resultEmoji').textContent = emoji;
-            
-            let mistakesHtml = '';
-            if (mistakes.length > 0) {
-                mistakesHtml = '<h4 class="font-bold mb-3">Review Mistakes:</h4>';
-                mistakes.forEach((m, idx) => {
+            currentUser.history = history;
+            localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+            db.collection('users').doc(currentUser.id).update({ history });
+
+            // Show results
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('final-score').textContent = `${correctCount}/${total}`;
+            document.getElementById('result-message').textContent = 
+                percent >= 90 ? 'Excellent! 🌟' : 
+                percent >= 70 ? 'Very Good! 👍' : 
+                percent >= 50 ? 'Good effort 💪' : 'Keep practicing 📚';
+
+            // Prepare mistakes review
+            if (quizMistakes.length > 0) {
+                document.getElementById('mistakes-review').classList.remove('hidden');
+                let mistakesHtml = '';
+                quizMistakes.forEach((m, i) => {
                     mistakesHtml += `
-                        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border-l-4 border-red-500">
-                            <p class="font-medium mb-2">${idx + 1}. ${escapeHtml(m.question)}</p>
-                            <p class="text-sm text-red-600 dark:text-red-400">Your answer: ${escapeHtml(m.yourAnswer)}</p>
-                            <p class="text-sm text-green-600 dark:text-green-400">Correct answer: ${escapeHtml(m.correctAnswer)}</p>
-                            ${m.explanation ? `<p class="text-sm text-gray-600 mt-2"><i class="fas fa-info-circle mr-1"></i>${escapeHtml(m.explanation)}</p>` : ''}
+                        <div class="mistake-review">
+                            <strong>Q${i + 1}:</strong> ${m.question}<br>
+                            <span style="color: #f44336;">Your answer: ${m.yourAnswer}</span><br>
+                            <span style="color: #4caf50;">Correct: ${m.correctAnswer}</span><br>
+                            <small>${m.explanation}</small>
                         </div>
                     `;
                 });
+                document.getElementById('mistakes-list').innerHTML = mistakesHtml;
             } else {
-                mistakesHtml = '<div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center"><i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i><p class="font-bold">Perfect score! No mistakes!</p></div>';
+                document.getElementById('mistakes-review').classList.add('hidden');
             }
-            
-            document.getElementById('mistakesReview').innerHTML = mistakesHtml;
         }
 
-        function returnToBrowse() {
-            document.getElementById('resultsScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            loadContent();
+        function reviewMistakes() {
+            document.getElementById('result-screen').classList.add('hidden');
+            showMainTab('mistakes');
+            document.getElementById('main-app').classList.remove('hidden');
+            loadMistakes();
         }
 
-        function retakeQuiz() {
-            startQuiz(currentQuiz.id);
-            document.getElementById('resultsScreen').classList.add('hidden');
-        }
+        // Load Mistakes
+        function loadMistakes() {
+            const history = currentUser.history || [];
+            let allMistakes = [];
 
-        // ==================== OTHER TABS ====================
+            history.forEach(h => {
+                if (h.mistakes) {
+                    h.mistakes.forEach(m => {
+                        m.date = h.date;
+                        allMistakes.push(m);
+                    });
+                }
+            });
 
-        async function loadFavorites(container) {
-            const favorites = currentUser.data.favorites || [];
-            
-            if (favorites.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 py-12"><i class="fas fa-star text-5xl mb-4 text-gray-300"></i><p class="text-lg">No favorites yet</p><p class="text-sm text-gray-400">Bookmark questions during quizzes to see them here</p></div>';
+            if (allMistakes.length === 0) {
+                document.getElementById('mistakes-content').innerHTML = '<p>No mistakes yet! Great job! 🎉</p>';
                 return;
             }
-            
-            container.innerHTML = '<div class="text-center py-8"><div class="loading-spinner mr-2"></div>Loading...</div>';
-        }
 
-        async function loadMistakes(container) {
-            const mistakes = currentUser.data.mistakes || [];
-            
-            if (mistakes.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 py-12"><i class="fas fa-check-circle text-5xl mb-4 text-green-300"></i><p class="text-lg">No mistakes recorded!</p><p class="text-sm text-gray-400">Great job! Keep it up!</p></div>';
-                return;
-            }
-            
-            let html = '<div class="space-y-4 fade-in">';
-            mistakes.slice().reverse().forEach((m, idx) => {
+            let html = '<h3>All Your Mistakes:</h3>';
+            allMistakes.forEach((m, i) => {
+                const date = m.date.toDate ? m.date.toDate().toLocaleDateString() : new Date(m.date).toLocaleDateString();
                 html += `
-                    <div class="glass-card p-4 border-l-4 border-red-500">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-sm text-gray-500">Mistake #${mistakes.length - idx}</span>
-                        </div>
-                        <p class="font-medium mb-2">${escapeHtml(m.question)}</p>
-                        <p class="text-sm text-red-600 dark:text-red-400 mb-1"><i class="fas fa-times mr-1"></i>Your answer: ${escapeHtml(m.yourAnswer)}</p>
-                        <p class="text-sm text-green-600 dark:text-green-400"><i class="fas fa-check mr-1"></i>Correct: ${escapeHtml(m.correctAnswer)}</p>
-                        ${m.explanation ? `<p class="text-sm text-gray-600 mt-2 bg-gray-50 dark:bg-gray-800 p-2 rounded">${escapeHtml(m.explanation)}</p>` : ''}
+                    <div class="mistake-review">
+                        <strong>Q${i + 1}:</strong> ${m.question}<br>
+                        <span style="color: #666; font-size: 0.9em;">From: ${m.quizTitle} • ${date}</span><br>
+                        <span style="color: #f44336;">Your answer: ${m.yourAnswer}</span><br>
+                        <span style="color: #4caf50;">Correct: ${m.correctAnswer}</span><br>
+                        <small>${m.explanation}</small>
                     </div>
                 `;
             });
-            html += '</div>';
-            container.innerHTML = html;
+            document.getElementById('mistakes-content').innerHTML = html;
         }
 
-        async function loadHistory(container) {
-            try {
-                const historySnapshot = await db.collection('students')
-                    .doc(currentUser.username)
-                    .collection('history')
-                    .orderBy('completedAt', 'desc')
-                    .get();
-                
-                if (historySnapshot.empty) {
-                    container.innerHTML = '<div class="text-center text-gray-500 py-12"><i class="fas fa-history text-5xl mb-4 text-gray-300"></i><p class="text-lg">No history yet</p><p class="text-sm text-gray-400">Take some quizzes to see your progress</p></div>';
-                    return;
-                }
-                
-                let html = '<div class="space-y-4 fade-in">';
-                historySnapshot.forEach(doc => {
-                    const h = doc.data();
-                    const date = h.completedAt ? new Date(h.completedAt.toDate()).toLocaleDateString() : 'Unknown';
-                    const scoreColor = h.score >= 80 ? 'text-green-600 bg-green-100 dark:bg-green-900/30' : 
-                                      h.score >= 60 ? 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30' : 
-                                      'text-red-600 bg-red-100 dark:bg-red-900/30';
-                    
-                    html += `
-                        <div class="glass-card p-4 flex justify-between items-center hover:shadow-lg transition">
-                            <div class="min-w-0 flex-1">
-                                <h4 class="font-bold truncate">${h.quizTitle}</h4>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">${date}</p>
-                            </div>
-                            <div class="text-right ml-4">
-                                <div class="text-2xl font-bold ${scoreColor.split(' ')[0]} px-3 py-1 rounded-full">${h.score}%</div>
-                                <div class="text-sm text-gray-500 mt-1">${h.correct}/${h.total} correct</div>
-                            </div>
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                container.innerHTML = html;
-                
-            } catch (error) {
-                container.innerHTML = `<div class="text-center text-red-500 py-8">Error loading history: ${error.message}</div>`;
-            }
-        }
+        // Load History
+        function loadHistory() {
+            const history = currentUser.history || [];
 
-        // ==================== SEARCH & FILES ====================
-
-        async function handleSearch() {
-            const query = document.getElementById('searchInput').value.toLowerCase().trim();
-            if (!query) {
-                loadContent();
+            if (history.length === 0) {
+                document.getElementById('history-content').innerHTML = '<p>No history yet.</p>';
                 return;
             }
-            
-            const container = document.getElementById('contentArea');
-            container.innerHTML = '<div class="flex justify-center p-8"><div class="loading-spinner mr-2"></div>Searching...</div>';
-            
-            try {
-                // Search folders
-                const foldersSnapshot = await db.collection('folders').get();
-                const matchingFolders = [];
-                foldersSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.name.toLowerCase().includes(query)) {
-                        matchingFolders.push({ id: doc.id, ...data });
-                    }
-                });
-                
-                // Search quizzes
-                const quizzesSnapshot = await db.collection('quizzes').get();
-                const matchingQuizzes = [];
-                quizzesSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.title.toLowerCase().includes(query)) {
-                        matchingQuizzes.push({ id: doc.id, ...data });
-                    }
-                });
-                
-                let html = '<div class="space-y-6 fade-in">';
-                
-                if (matchingFolders.length > 0) {
-                    html += '<div><h3 class="text-xl font-bold mb-4 flex items-center"><i class="fas fa-folder text-indigo-600 mr-2"></i>Folders</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
-                    matchingFolders.forEach(folder => {
-                        html += `
-                            <div onclick="navigateToFolder('${folder.id}', '${escapeHtml(folder.name)}')" 
-                                class="folder-card glass-card p-4 cursor-pointer hover:bg-indigo-50">
-                                <i class="fas fa-folder text-2xl text-indigo-600 mr-3"></i>
-                                <span class="font-medium">${escapeHtml(folder.name)}</span>
-                            </div>
-                        `;
-                    });
-                    html += '</div></div>';
-                }
-                
-                if (matchingQuizzes.length > 0) {
-                    html += '<div><h3 class="text-xl font-bold mb-4 flex items-center"><i class="fas fa-question-circle text-green-600 mr-2"></i>Quizzes</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
-                    matchingQuizzes.forEach(quiz => {
-                        html += `
-                            <div onclick="startQuiz('${quiz.id}')" 
-                                class="folder-card glass-card p-4 cursor-pointer border-l-4 border-green-500 hover:bg-green-50">
-                                <i class="fas fa-play-circle text-2xl text-green-600 mr-3"></i>
-                                <span class="font-medium">${escapeHtml(quiz.title)}</span>
-                            </div>
-                        `;
-                    });
-                    html += '</div></div>';
-                }
-                
-                if (matchingFolders.length === 0 && matchingQuizzes.length === 0) {
-                    html += '<div class="text-center text-gray-500 py-12"><i class="fas fa-search text-5xl mb-4 text-gray-300"></i><p class="text-lg">No results found</p><p class="text-sm text-gray-400">Try different keywords</p></div>';
-                }
-                
-                html += '</div>';
-                container.innerHTML = html;
-                
-            } catch (error) {
-                container.innerHTML = `<div class="text-center text-red-500 py-8">Search error: ${error.message}</div>`;
-            }
-        }
 
-        function viewFile(id, name, url, type) {
-            document.getElementById('fileTitle').textContent = name;
-            document.getElementById('downloadBtn').href = url;
-            
-            const viewer = document.getElementById('fileViewer');
-            
-            if (type && type.includes('pdf')) {
-                viewer.innerHTML = `<iframe src="${url}" class="w-full h-full min-h-[600px]" frameborder="0"></iframe>`;
-            } else if (type && type.includes('image')) {
-                viewer.innerHTML = `<img src="${url}" class="max-w-full mx-auto rounded shadow-lg" style="max-height: 80vh;">`;
-            } else {
-                viewer.innerHTML = `
-                    <div class="text-center p-8">
-                        <i class="fas fa-file text-6xl text-gray-400 mb-4"></i>
-                        <p class="text-lg mb-4">Preview not available for this file type</p>
-                        <a href="${url}" download class="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                            <i class="fas fa-download mr-2"></i>Download File
-                        </a>
-                    </div>
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<tr style="background: #667eea; color: white;"><th>Quiz</th><th>Score</th><th>Date</th><th>Time</th></tr>';
+
+            history.slice().reverse().forEach(h => {
+                const date = h.date.toDate ? h.date.toDate().toLocaleDateString() : new Date(h.date).toLocaleDateString();
+                const timeSpent = h.timeSpent ? Math.floor(h.timeSpent / 60) + ':' + (h.timeSpent % 60).toString().padStart(2, '0') : 'N/A';
+                html += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px;">${h.quizName}</td>
+                        <td style="padding: 10px;">${h.score}/${h.total} (${h.percent}%)</td>
+                        <td style="padding: 10px;">${date}</td>
+                        <td style="padding: 10px;">${timeSpent}</td>
+                    </tr>
                 `;
-            }
-            
-            document.getElementById('fileModal').classList.remove('hidden');
+            });
+
+            html += '</table>';
+            document.getElementById('history-content').innerHTML = html;
         }
 
-        function closeFileModal() {
-            document.getElementById('fileModal').classList.add('hidden');
-            document.getElementById('fileViewer').innerHTML = '';
-        }
-
-        // ==================== UTILITIES ====================
-
-        function showNotification(message, type = 'info') {
-            const notif = document.createElement('div');
-            const colors = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-            notif.className = `fixed top-4 right-4 ${colors} text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in flex items-center gap-2 max-w-sm`;
-            notif.innerHTML = `
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-                <span>${message}</span>
-            `;
-            
-            document.body.appendChild(notif);
-            
-            setTimeout(() => {
-                notif.style.opacity = '0';
-                notif.style.transform = 'translateY(-20px)';
-                setTimeout(() => notif.remove(), 300);
-            }, 3000);
-        }
-
+        // Dark Mode
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
             localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
         }
 
+        // Check for dark mode preference
         if (localStorage.getItem('darkMode') === 'true') {
             document.body.classList.add('dark-mode');
         }
 
-        function adjustFontSize(delta) {
-            fontSize += delta;
-            if (fontSize < 12) fontSize = 12;
-            if (fontSize > 24) fontSize = 24;
-            document.body.style.fontSize = `${fontSize}px`;
-            localStorage.setItem('fontSize', fontSize);
+        // Zoom
+        function toggleZoom() {
+            const controls = document.getElementById('zoom-controls');
+            controls.style.display = controls.style.display === 'none' ? 'flex' : 'none';
         }
 
-        // Restore font size
-        const savedFontSize = localStorage.getItem('fontSize');
-        if (savedFontSize) {
-            fontSize = parseInt(savedFontSize);
-            document.body.style.fontSize = `${fontSize}px`;
+        function changeFontSize(delta) {
+            fontSize += delta * 2;
+            if (fontSize < 12) fontSize = 12;
+            if (fontSize > 32) fontSize = 32;
+            showQuestion(currentQuestionIndex);
+        }
+
+        // Calculator
+        function toggleCalculator() {
+            const calc = document.getElementById('calculator');
+            calc.style.display = calc.style.display === 'none' ? 'block' : 'none';
         }
 
         let calcExpression = '';
-        function toggleCalculator() {
-            document.getElementById('calculator').classList.toggle('hidden');
-        }
-
         function calcInput(val) {
-            const display = document.getElementById('calcDisplay');
-            
-            if (val === 'C') {
+            calcExpression += val;
+            document.getElementById('calc-display').value = calcExpression;
+        }
+
+        function calcClear() {
+            calcExpression = '';
+            document.getElementById('calc-display').value = '';
+        }
+
+        function calcDelete() {
+            calcExpression = calcExpression.slice(0, -1);
+            document.getElementById('calc-display').value = calcExpression;
+        }
+
+        function calcCalculate() {
+            try {
+                const result = eval(calcExpression);
+                calcExpression = result.toString();
+                document.getElementById('calc-display').value = calcExpression;
+            } catch (e) {
+                document.getElementById('calc-display').value = 'Error';
                 calcExpression = '';
-                display.value = '';
-            } else if (val === '=') {
-                try {
-                    calcExpression = eval(calcExpression).toString();
-                    display.value = calcExpression;
-                } catch {
-                    display.value = 'Error';
-                    calcExpression = '';
+            }
+        }
+
+        // Notifications
+        function checkNotifications() {
+            db.collection('notifications').where('active', '==', true).get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const notif = doc.data();
+                    const now = new Date();
+                    const expiry = notif.expiry.toDate ? notif.expiry.toDate() : new Date(notif.expiry);
+
+                    if (now < expiry) {
+                        // Check if user-specific
+                        if (!notif.targetUser || notif.targetUser === (currentUser ? currentUser.id : '')) {
+                            showNotification(notif.message, doc.id);
+                        }
+                    }
+                });
+            });
+        }
+
+        function showNotification(message, id) {
+            // Check if already shown
+            const shown = localStorage.getItem('notif_' + id);
+            if (shown) return;
+
+            const div = document.createElement('div');
+            div.className = 'notification';
+            div.innerHTML = `
+                ${message}
+                <span class="close" onclick="this.parentElement.remove(); localStorage.setItem('notif_${id}', 'true')">×</span>
+            `;
+            document.body.appendChild(div);
+
+            setTimeout(() => {
+                if (div.parentElement) {
+                    div.remove();
+                    localStorage.setItem('notif_' + id, 'true');
                 }
-            } else {
-                calcExpression += val;
-                display.value = calcExpression;
-            }
+            }, 10000);
         }
-
-        // Close modals on outside click
-        window.onclick = function(event) {
-            const fileModal = document.getElementById('fileModal');
-            if (event.target === fileModal) {
-                closeFileModal();
-            }
-        }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeFileModal();
-            }
-        });
     </script>
 </body>
 </html>
