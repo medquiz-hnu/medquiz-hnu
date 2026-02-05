@@ -243,6 +243,10 @@
                 if (doc.exists && doc.data().pinHash === hashed) {
                     currentUser = { id: username, ...doc.data() };
                     localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+                    // Update last active
+                    db.collection('users').doc(username).update({
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                     showMainApp();
                 } else { alert('Invalid username or PIN'); }
             });
@@ -260,6 +264,14 @@
             document.getElementById('user-name').textContent = currentUser.username;
             loadUserNotifications();
             loadHome();
+            // Update activity every 2 minutes
+            setInterval(() => {
+                if (currentUser) {
+                    db.collection('users').doc(currentUser.id).update({
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            }, 120000);
         }
 
         function showMainTab(tab) {
