@@ -3,429 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedQuiz HNU - Medical Quiz Platform</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <title>MedQuiz HNU - Student Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-app.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-auth.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-firestore.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-storage.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
         }
-
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
-
-        .header {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-
-        .header h1 {
-            color: #667eea;
-            font-size: 2.5em;
-        }
-
-        .section {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1em;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            transition: transform 0.3s;
-        }
-
-        .btn:hover {
-            transform: scale(1.05);
-        }
-
-        .btn-secondary {
-            background: #eee;
-            color: #333;
-        }
-
-        .folders-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .folder-card {
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .folder-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        }
-
-        .folder-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-
-        .quiz-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            border-left: 5px solid #667eea;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .quiz-card:hover {
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-
-        .question-card {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border-right: 5px solid #667eea;
-        }
-
-        .option {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 10px 0;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .option:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-
-        .option.correct {
-            border-color: #4caf50;
-            background: #e8f5e9;
-        }
-
-        .option.wrong {
-            border-color: #f44336;
-            background: #ffebee;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .result-container {
-            text-align: center;
-            padding: 50px;
-        }
-
-        .result-score {
-            font-size: 4em;
-            color: #667eea;
-            font-weight: bold;
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        .nav-tab {
-            padding: 10px 20px;
-            background: none;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            color: #666;
-        }
-
-        .nav-tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .breadcrumb {
-            background: white;
-            border-radius: 10px;
-            padding: 15px 20px;
-            margin-bottom: 20px;
-        }
-
-        .breadcrumb a {
-            color: #667eea;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .timer {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            font-size: 1.2em;
-            font-weight: bold;
-            z-index: 1000;
-        }
-
-        .timer.warning {
-            color: #f44336;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
+        
         .dark-mode {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         }
-
-        .dark-mode .header,
-        .dark-mode .section,
-        .dark-mode .breadcrumb {
-            background: #0f3460;
+        
+        .dark-mode .glass-card {
+            background: rgba(30, 30, 46, 0.95);
             color: white;
         }
-
-        .dark-mode .folder-card,
-        .dark-mode .quiz-card {
-            background: #1a1a2e;
-            color: white;
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
         }
-
-        .search-box {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
-            margin-bottom: 20px;
-            font-size: 1em;
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
-
-        .favorite-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            font-size: 1.5em;
+        
+        .folder-card {
+            transition: all 0.3s ease;
             cursor: pointer;
         }
-
-        .notification {
+        
+        .folder-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .quiz-option {
+            transition: all 0.2s ease;
+        }
+        
+        .quiz-option:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .dark-mode .quiz-option:hover {
+            background-color: #2d2d44;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+        
+        .hidden { display: none !important; }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .bookmark-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .bookmark-btn.active {
+            color: #fbbf24;
+        }
+        
+        .flag-btn.active {
+            color: #ef4444;
+        }
+        
+        #calculator {
             position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #667eea;
+            bottom: 20px;
+            right: 20px;
+            width: 280px;
+            z-index: 1000;
+        }
+        
+        .calc-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            z-index: 2000;
-            animation: slideDown 0.5s;
-        }
-
-        .notification .close {
-            margin-left: 15px;
+            border: none;
             cursor: pointer;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        
+        .file-item {
+            transition: all 0.2s ease;
+        }
+        
+        .file-item:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .dark-mode .file-item:hover {
+            background-color: #2d2d44;
+        }
+        
+        .tab-active {
+            border-bottom: 3px solid #667eea;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .dark-mode .tab-active {
+            border-bottom-color: #a78bfa;
+            color: #a78bfa;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .timer-display {
+            font-family: 'Courier New', monospace;
             font-weight: bold;
+            font-size: 1.2rem;
         }
-
-        @keyframes slideDown {
-            from { transform: translateX(-50%) translateY(-100%); }
-            to { transform: translateX(-50%) translateY(0); }
+        
+        .timer-warning {
+            color: #ef4444;
+            animation: pulse 1s infinite;
         }
-
-        .mistake-review {
-            background: #fff3e0;
-            border-left: 5px solid #ff9800;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 10px;
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Login Screen -->
-        <div id="login-screen" class="section">
-            <div class="header">
-                <h1>🩺 MedQuiz HNU</h1>
-                <p>Medical Quiz Platform</p>
+<body class="p-4">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center">
+        <div class="glass-card p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <i class="fas fa-stethoscope text-6xl text-indigo-600 mb-4"></i>
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">MedQuiz HNU</h1>
+                <p class="text-gray-600 mt-2">Medical Quiz Platform</p>
             </div>
             
-            <div class="nav-tabs">
-                <button class="nav-tab active" onclick="showLoginTab('login')">Login</button>
-                <button class="nav-tab" onclick="showLoginTab('signup')">Sign Up</button>
-            </div>
-
-            <div id="login-form">
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="login-username" placeholder="Enter username">
-                </div>
-                <div class="form-group">
-                    <label>PIN Code (4 digits)</label>
-                    <input type="password" id="login-pin" placeholder="Enter PIN" maxlength="4">
-                </div>
-                <button class="btn" onclick="login()">Login</button>
-            </div>
-
-            <div id="signup-form" class="hidden">
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="signup-username" placeholder="Choose username">
-                </div>
-                <div class="form-group">
-                    <label>PIN Code (4 digits)</label>
-                    <input type="password" id="signup-pin" placeholder="Choose PIN" maxlength="4">
-                </div>
-                <div class="form-group">
-                    <label>Confirm PIN</label>
-                    <input type="password" id="signup-pin-confirm" placeholder="Confirm PIN" maxlength="4">
-                </div>
-                <button class="btn" onclick="signup()">Sign Up</button>
-            </div>
-        </div>
-
-        <!-- Main App (Hidden initially) -->
-        <div id="main-app" class="hidden">
-            <div class="header">
-                <h1>🩺 MedQuiz HNU</h1>
-                <p>Welcome, <span id="user-name"></span>!</p>
-                <div style="margin-top: 15px;">
-                    <button class="btn btn-secondary" onclick="toggleDarkMode()">🌙 Dark Mode</button>
-                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
-                
-                </div>
-            </div>
-
-            <div class="breadcrumb" id="breadcrumb">
-                <a onclick="goHome()">🏠 Home</a>
-            </div>
-
-            <div class="nav-tabs">
-                <button class="nav-tab active" onclick="showMainTab('browse')">📚 Browse</button>
-                <button class="nav-tab" onclick="showMainTab('favorites')">⭐ Favorites</button>
-                <button class="nav-tab" onclick="showMainTab('mistakes')">❌ My Mistakes</button>
-                <button class="nav-tab" onclick="showMainTab('history')">📊 History</button>
-            </div>
-
-            <div id="browse-tab" class="section">
-                <input type="text" class="search-box" id="search-box" placeholder="🔍 Search quizzes..." onkeyup="searchQuizzes()">
-                <div id="browse-content"></div>
-            </div>
-
-            <div id="favorites-tab" class="section hidden">
-                <h2>⭐ My Favorites</h2>
-                <div id="favorites-content"></div>
-            </div>
-
-            <div id="mistakes-tab" class="section hidden">
-                <h2>❌ My Mistakes</h2>
-                <div id="mistakes-content"></div>
-            </div>
-
-            <div id="history-tab" class="section hidden">
-                <h2>📊 My History</h2>
-                <div id="history-content"></div>
-            </div>
-        </div>
-
-        <!-- Quiz Screen -->
-        <div id="quiz-screen" class="hidden">
-            <div class="timer" id="timer">⏱️ 30:00</div>
-            <div class="section">
-                <h2 id="quiz-title"></h2>
-                <div id="questions-container"></div>
-                <div style="text-align: center; margin-top: 30px;">
-                    <button class="btn" onclick="finishQuiz()">Finish Quiz</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Result Screen -->
-        <div id="result-screen" class="hidden">
-            <div class="section result-container">
-                <h2>🎉 Quiz Completed!</h2>
-                <div class="result-score" id="final-score"></div>
-                <p id="result-message"></p>
-                
-                <div id="mistakes-review" class="hidden" style="margin: 30px 0; text-align: left;">
-                    <h3>❌ Questions You Got Wrong:</h3>
-                    <div id="mistakes-list"></div>
+            <div class="space-y-4">
+                <div class="flex justify-center space-x-4 mb-6">
+                    <button onclick="switchAuthMode('login')" id="loginTab" class="px-6 py-2 rounded-full btn-primary text-white">Login</button>
+                    <button onclick="switchAuthMode('signup')" id="signupTab" class="px-6 py-2 rounded-full bg-gray-200 text-gray-700">Sign Up</button>
                 </div>
                 
-                <div style="margin-top: 30px;">
-                    <button class="btn" onclick="reviewMistakes()">Review Mistakes</button>
-                    <button class="btn btn-secondary" onclick="goHome()">Back to Home</button>
-                </div>
+                <input type="text" id="authUsername" placeholder="Username" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500">
+                <input type="password" id="authPin" placeholder="PIN (4 digits)" maxlength="4" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500">
+                
+                <button onclick="handleAuth()" class="w-full py-3 rounded-lg btn-primary text-white font-semibold">
+                    <span id="authBtnText">Login</span>
+                </button>
+                
+                <div id="authError" class="text-red-500 text-center hidden"></div>
             </div>
         </div>
     </div>
 
+    <!-- Main App -->
+    <div id="mainApp" class="hidden max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="glass-card p-6 mb-6">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <div class="flex items-center gap-4">
+                    <i class="fas fa-stethoscope text-4xl text-indigo-600"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">MedQuiz HNU</h1>
+                        <p class="text-gray-600 dark:text-gray-300">Welcome, <span id="userName">Student</span>!</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleDarkMode()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:inline"></i>
+                        <span class="ml-2 dark:hidden">Dark Mode</span>
+                        <span class="ml-2 hidden dark:inline">Light Mode</span>
+                    </button>
+                    
+                    <div class="relative">
+                        <button onclick="toggleNotifications()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition relative">
+                            <i class="fas fa-bell"></i>
+                            <span id="notifBadge" class="notification-badge hidden">0</span>
+                        </button>
+                        <div id="notificationsPanel" class="hidden absolute right-0 mt-2 w-80 glass-card p-4 z-50 max-h-96 overflow-y-auto">
+                            <h3 class="font-bold mb-3">Notifications</h3>
+                            <div id="notificationsList"></div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="logout()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Breadcrumb -->
+        <div class="glass-card p-4 mb-4 flex items-center gap-2 text-sm">
+            <button onclick="navigateToRoot()" class="text-indigo-600 hover:underline"><i class="fas fa-home"></i> Home</button>
+            <span id="breadcrumb"></span>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="glass-card p-4 mb-6">
+            <div class="flex gap-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+                <button onclick="switchTab('browse')" id="tab-browse" class="tab-active pb-3 px-2 whitespace-nowrap">
+                    <i class="fas fa-folder-open mr-2"></i>Browse
+                </button>
+                <button onclick="switchTab('favorites')" id="tab-favorites" class="pb-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                    <i class="fas fa-star mr-2"></i>Favorites
+                </button>
+                <button onclick="switchTab('mistakes')" id="tab-mistakes" class="pb-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                    <i class="fas fa-times-circle mr-2 text-red-500"></i>My Mistakes
+                </button>
+                <button onclick="switchTab('history')" id="tab-history" class="pb-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                    <i class="fas fa-history mr-2"></i>History
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="glass-card p-4 mb-6">
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="Search folders, quizzes, files..." 
+                    class="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-indigo-500">
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="contentArea" class="glass-card p-6 min-h-[400px]">
+            <!-- Dynamic content loaded here -->
+        </div>
+    </div>
+
+    <!-- Quiz Interface -->
+    <div id="quizInterface" class="hidden max-w-4xl mx-auto">
+        <div class="glass-card p-6 mb-4">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <h2 id="quizTitle" class="text-2xl font-bold"></h2>
+                <div class="flex items-center gap-4">
+                    <div id="timer" class="timer-display bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
+                        <i class="fas fa-clock mr-2"></i><span id="timeRemaining">30:00</span>
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        Question <span id="currentQNum">1</span> of <span id="totalQNum">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="progress-bar mt-4">
+                <div id="quizProgress" class="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="glass-card p-6 mb-4" id="questionCard">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex gap-2">
+                    <button onclick="toggleBookmark()" id="bookmarkBtn" class="bookmark-btn p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="far fa-bookmark text-xl"></i>
+                    </button>
+                    <button onclick="toggleFlag()" id="flagBtn" class="flag-btn p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600">
+                        <i class="far fa-flag text-xl"></i>
+                    </button>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <i class="fas fa-bookmark mr-1"></i><span id="bookmarkCount">0</span> bookmarked
+                </div>
+            </div>
+            
+            <div id="questionText" class="text-lg mb-6 font-medium"></div>
+            
+            <div id="optionsContainer" class="space-y-3">
+                <!-- Options loaded dynamically -->
+            </div>
+            
+            <div id="explanationBox" class="hidden mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border-l-4 border-blue-500">
+                <h4 class="font-bold mb-2"><i class="fas fa-info-circle mr-2"></i>Explanation</h4>
+                <p id="explanationText"></p>
+            </div>
+        </div>
+
+        <div class="glass-card p-4 flex justify-between items-center">
+            <button onclick="previousQuestion()" id="prevBtn" class="px-6 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition disabled:opacity-50">
+                <i class="fas fa-chevron-left mr-2"></i>Previous
+            </button>
+            
+            <div class="flex gap-2">
+                <button onclick="saveProgress()" class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition">
+                    <i class="fas fa-save mr-2"></i>Save
+                </button>
+                <button onclick="submitQuiz()" class="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition">
+                    <i class="fas fa-check mr-2"></i>Submit
+                </button>
+            </div>
+            
+            <button onclick="nextQuestion()" id="nextBtn" class="px-6 py-2 rounded-lg btn-primary text-white transition">
+                Next<i class="fas fa-chevron-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="resultsScreen" class="hidden min-h-screen flex items-center justify-center">
+        <div class="glass-card p-8 w-full max-w-2xl text-center">
+            <div class="mb-6">
+                <div class="text-6xl mb-4" id="resultEmoji">🎉</div>
+                <h2 class="text-3xl font-bold mb-2">Quiz Completed!</h2>
+                <p class="text-gray-600 dark:text-gray-400">Here's how you performed</p>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <div class="text-2xl font-bold text-indigo-600" id="scorePercent">0%</div>
+                    <div class="text-sm text-gray-600">Score</div>
+                </div>
+                <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600" id="correctCount">0</div>
+                    <div class="text-sm text-gray-600">Correct</div>
+                </div>
+                <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <div class="text-2xl font-bold text-red-600" id="wrongCount">0</div>
+                    <div class="text-sm text-gray-600">Wrong</div>
+                </div>
+            </div>
+            
+            <div id="mistakesReview" class="text-left mb-6 max-h-64 overflow-y-auto"></div>
+            
+            <div class="flex justify-center gap-4">
+                <button onclick="returnToBrowse()" class="px-6 py-3 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Browse
+                </button>
+                <button onclick="retakeQuiz()" class="px-6 py-3 rounded-lg btn-primary text-white">
+                    <i class="fas fa-redo mr-2"></i>Retake Quiz
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Viewer Modal -->
+    <div id="fileModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-4xl h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                <h3 id="fileTitle" class="text-xl font-bold"></h3>
+                <div class="flex gap-2">
+                    <a id="downloadBtn" class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition" download>
+                        <i class="fas fa-download mr-2"></i>Download
+                    </a>
+                    <button onclick="closeFileModal()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="fileViewer" class="flex-1 overflow-auto p-4 bg-gray-100 dark:bg-gray-900">
+                <!-- File content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="zoom-controls flex gap-2">
+        <button onclick="adjustFontSize(-1)" class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center hover:bg-gray-100">
+            <i class="fas fa-minus"></i>
+        </button>
+        <button onclick="adjustFontSize(1)" class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center hover:bg-gray-100">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
+    <button onclick="toggleCalculator()" class="calc-btn">
+        <i class="fas fa-calculator"></i>
+    </button>
+
+    <div id="calculator" class="hidden glass-card p-4">
+        <div class="flex justify-between items-center mb-3">
+            <span class="font-bold">Calculator</span>
+            <button onclick="toggleCalculator()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <input type="text" id="calcDisplay" readonly class="w-full p-3 mb-3 text-right text-xl bg-gray-100 dark:bg-gray-800 rounded">
+        <div class="grid grid-cols-4 gap-2">
+            <button onclick="calcInput('C')" class="p-3 rounded bg-red-100 text-red-600 hover:bg-red-200">C</button>
+            <button onclick="calcInput('/')" class="p-3 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">÷</button>
+            <button onclick="calcInput('*')" class="p-3 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">×</button>
+            <button onclick="calcInput('-')" class="p-3 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">-</button>
+            <button onclick="calcInput('7')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">7</button>
+            <button onclick="calcInput('8')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">8</button>
+            <button onclick="calcInput('9')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">9</button>
+            <button onclick="calcInput('+')" class="p-3 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">+</button>
+            <button onclick="calcInput('4')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">4</button>
+            <button onclick="calcInput('5')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">5</button>
+            <button onclick="calcInput('6')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">6</button>
+            <button onclick="calcInput('=')" class="p-3 rounded bg-indigo-500 text-white hover:bg-indigo-600 row-span-2">=</button>
+            <button onclick="calcInput('1')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">1</button>
+            <button onclick="calcInput('2')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">2</button>
+            <button onclick="calcInput('3')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">3</button>
+            <button onclick="calcInput('0')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 col-span-2">0</button>
+            <button onclick="calcInput('.')" class="p-3 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">.</button>
+        </div>
+    </div>
+
     <script>
-        // Firebase Config
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyB001YxSS9iQ6PArK1VHf0lIlpLyP1Rqew",
             authDomain: "medquiz-hnu.firebaseapp.com",
@@ -436,518 +473,731 @@
             measurementId: "G-4T9XPB89N7"
         };
 
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
+        const storage = firebase.storage();
 
+        // Global State
         let currentUser = null;
         let currentPath = [];
-        let currentQuestions = [];
-        let userAnswers = {};
-        let correctCount = 0;
-        let quizMistakes = [];
-        let timerInterval;
-        let timeRemaining = 1800; // 30 minutes
-
-        // Check for existing session
-        window.onload = function() {
-            const savedUser = localStorage.getItem('medquiz_user');
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                showMainApp();
-            }
-            checkNotifications();
+        let currentFolder = null;
+        let currentQuiz = null;
+        let quizState = {
+            questions: [],
+            currentIndex: 0,
+            answers: {},
+            bookmarks: new Set(),
+            flagged: new Set(),
+            startTime: null,
+            timerInterval: null,
+            timeRemaining: 1800 // 30 minutes in seconds
         };
+        let fontSize = 16;
+        let currentTab = 'browse';
 
-        // Login/Signup Tabs
-        function showLoginTab(tab) {
-            document.querySelectorAll('#login-screen .nav-tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            if (tab === 'login') {
-                document.getElementById('login-form').classList.remove('hidden');
-                document.getElementById('signup-form').classList.add('hidden');
-            } else {
-                document.getElementById('login-form').classList.add('hidden');
-                document.getElementById('signup-form').classList.remove('hidden');
-            }
+        // Auth Functions
+        function switchAuthMode(mode) {
+            document.getElementById('loginTab').className = mode === 'login' ? 
+                'px-6 py-2 rounded-full btn-primary text-white' : 'px-6 py-2 rounded-full bg-gray-200 text-gray-700';
+            document.getElementById('signupTab').className = mode === 'signup' ? 
+                'px-6 py-2 rounded-full btn-primary text-white' : 'px-6 py-2 rounded-full bg-gray-200 text-gray-700';
+            document.getElementById('authBtnText').textContent = mode === 'login' ? 'Login' : 'Sign Up';
+            document.getElementById('authError').classList.add('hidden');
         }
 
-        // Signup
-        function signup() {
-            const username = document.getElementById('signup-username').value.trim();
-            const pin = document.getElementById('signup-pin').value;
-            const pinConfirm = document.getElementById('signup-pin-confirm').value;
-
-            if (!username || pin.length !== 4) {
-                alert('Please enter username and 4-digit PIN');
+        async function handleAuth() {
+            const username = document.getElementById('authUsername').value.trim().toLowerCase();
+            const pin = document.getElementById('authPin').value;
+            const mode = document.getElementById('authBtnText').textContent === 'Login' ? 'login' : 'signup';
+            
+            if (!username || !pin || pin.length !== 4) {
+                showAuthError('Please enter valid username and 4-digit PIN');
                 return;
             }
 
-            if (pin !== pinConfirm) {
-                alert('PIN codes do not match');
-                return;
-            }
-
-            const userId = username + '_' + pin;
-
-            db.collection('users').doc(userId).get().then(doc => {
-                if (doc.exists) {
-                    alert('Username already taken. Please choose another.');
+            try {
+                const email = `${username}@medquiz.hnu`;
+                
+                if (mode === 'login') {
+                    await auth.signInWithEmailAndPassword(email, pin);
                 } else {
-                    db.collection('users').doc(userId).set({
+                    await auth.createUserWithEmailAndPassword(email, pin);
+                    await db.collection('students').doc(username).set({
                         username: username,
-                        pin: pin,
-                        createdAt: new Date(),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         favorites: [],
+                        mistakes: [],
                         history: []
-                    }).then(() => {
-                        alert('Account created! Please login.');
-                        showLoginTab('login');
-                        document.querySelector('#login-screen .nav-tab').click();
                     });
                 }
-            });
-        }
-
-        // Login
-        function login() {
-            const username = document.getElementById('login-username').value.trim();
-            const pin = document.getElementById('login-pin').value;
-
-            if (!username || pin.length !== 4) {
-                alert('Please enter username and PIN');
-                return;
+            } catch (error) {
+                showAuthError(error.message);
             }
-
-            const userId = username + '_' + pin;
-
-            db.collection('users').doc(userId).get().then(doc => {
-                if (doc.exists) {
-                    currentUser = { id: userId, ...doc.data() };
-                    localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
-                    showMainApp();
-                } else {
-                    alert('Invalid username or PIN');
-                }
-            });
         }
 
-        // Logout
+        function showAuthError(msg) {
+            const errDiv = document.getElementById('authError');
+            errDiv.textContent = msg;
+            errDiv.classList.remove('hidden');
+        }
+
         function logout() {
-            currentUser = null;
-            localStorage.removeItem('medquiz_user');
-            location.reload();
+            auth.signOut();
         }
 
-        // Show Main App
-        function showMainApp() {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('main-app').classList.remove('hidden');
-            document.getElementById('user-name').textContent = currentUser.username;
-            loadHome();
-        }
-
-        // Main Tabs
-        function showMainTab(tab) {
-            document.querySelectorAll('#main-app .nav-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('#browse-tab, #favorites-tab, #mistakes-tab, #history-tab').forEach(t => t.classList.add('hidden'));
-            
-            event.target.classList.add('active');
-            document.getElementById(tab + '-tab').classList.remove('hidden');
-
-            if (tab === 'favorites') loadFavorites();
-            if (tab === 'mistakes') loadMistakes();
-            if (tab === 'history') loadHistory();
-        }
-
-        // Browse Content
-        function loadHome() {
-            currentPath = [];
-            updateBreadcrumb();
-            
-            db.collection('folders').where('parentId', '==', null).get().then(snapshot => {
-                let html = '<div class="folders-grid">';
+        // Auth State Listener
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const username = user.email.split('@')[0];
+                currentUser = { uid: user.uid, username: username };
                 
-                if (snapshot.empty) {
-                    html += '<p>No content available yet.</p>';
-                } else {
-                    snapshot.forEach(doc => {
-                        const folder = doc.data();
-                        html += `
-                            <div class="folder-card" onclick="openFolder('${doc.id}', '${folder.name}')">
-                                <div class="folder-icon">📁</div>
-                                <div class="folder-name">${folder.name}</div>
-                            </div>
-                        `;
-                    });
+                const studentDoc = await db.collection('students').doc(username).get();
+                if (studentDoc.exists) {
+                    currentUser.data = studentDoc.data();
                 }
                 
-                html += '</div>';
-                document.getElementById('browse-content').innerHTML = html;
-            });
-        }
+                document.getElementById('userName').textContent = username;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                loadNotifications();
+                navigateToRoot();
+            } else {
+                currentUser = null;
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+                document.getElementById('quizInterface').classList.add('hidden');
+                document.getElementById('resultsScreen').classList.add('hidden');
+            }
+        });
 
-        function openFolder(folderId, folderName) {
-            currentPath.push({ id: folderId, name: folderName, type: 'folder' });
-            loadCurrentFolder();
-        }
-
-        function loadCurrentFolder() {
+        // Navigation Functions
+        function navigateToRoot() {
+            currentPath = [];
+            currentFolder = null;
             updateBreadcrumb();
-            const current = currentPath[currentPath.length - 1];
-            
-            db.collection('folders').where('parentId', '==', current.id).get().then(foldersSnap => {
-                db.collection('quizzes').where('folderId', '==', current.id).get().then(quizzesSnap => {
-                    let html = '<div class="folders-grid">';
-                    
-                    if (!foldersSnap.empty) {
-                        foldersSnap.forEach(doc => {
-                            const folder = doc.data();
-                            html += `
-                                <div class="folder-card" onclick="openFolder('${doc.id}', '${folder.name}')">
-                                    <div class="folder-icon">📁</div>
-                                    <div class="folder-name">${folder.name}</div>
-                                </div>
-                            `;
-                        });
-                    }
-                    
-                    if (!quizzesSnap.empty) {
-                        quizzesSnap.forEach(doc => {
-                            const quiz = doc.data();
-                            const isFav = currentUser.favorites && currentUser.favorites.includes(doc.id);
-                            html += `
-                                <div class="quiz-card" style="position: relative;" onclick="startQuiz('${doc.id}', '${quiz.title}')">
-                                    <button class="favorite-btn" onclick="event.stopPropagation(); toggleFavorite('${doc.id}')">
-                                        ${isFav ? '⭐' : '☆'}
-                                    </button>
-                                    <h3>📝 ${quiz.title}</h3>
-                                    <p>${quiz.questionCount || 0} questions</p>
-                                    <button class="btn" style="margin-top: 15px;">Start Quiz</button>
-                                </div>
-                            `;
-                        });
-                    }
-                    
-                    html += '</div>';
-                    document.getElementById('browse-content').innerHTML = html;
-                });
-            });
+            loadContent();
+        }
+
+        function navigateToFolder(folderId, folderName) {
+            currentPath.push({ id: folderId, name: folderName });
+            updateBreadcrumb();
+            loadContent();
+        }
+
+        function navigateUp(index) {
+            currentPath = currentPath.slice(0, index + 1);
+            updateBreadcrumb();
+            loadContent();
         }
 
         function updateBreadcrumb() {
-            const breadcrumb = document.getElementById('breadcrumb');
-            let html = '<a onclick="goHome()">🏠 Home</a>';
+            let html = '';
+            currentPath.forEach((folder, index) => {
+                html += ` <span class="text-gray-400">></span> 
+                    <button onclick="navigateUp(${index})" class="text-indigo-600 hover:underline">${folder.name}</button>`;
+            });
+            document.getElementById('breadcrumb').innerHTML = html;
+        }
+
+        // Tab Functions
+        function switchTab(tab) {
+            currentTab = tab;
             
-            currentPath.forEach((item, index) => {
-                html += ' > ';
-                if (index === currentPath.length - 1) {
-                    html += `<strong>${item.name}</strong>`;
+            // Update UI
+            ['browse', 'favorites', 'mistakes', 'history'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    btn.classList.add('tab-active');
+                    btn.classList.remove('text-gray-600', 'dark:text-gray-400');
                 } else {
-                    html += `<a onclick="navigateTo(${index})">${item.name}</a>`;
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('text-gray-600', 'dark:text-gray-400');
                 }
             });
             
-            breadcrumb.innerHTML = html;
+            loadContent();
         }
 
-        function navigateTo(index) {
-            currentPath = currentPath.slice(0, index + 1);
-            if (currentPath[index].type === 'quiz') {
-                currentPath.pop();
-            }
-            loadCurrentFolder();
-        }
-
-        function goHome() {
-            document.getElementById('main-app').classList.remove('hidden');
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.add('hidden');
-            loadHome();
-        }
-
-        // Search
-        function searchQuizzes() {
-            const query = document.getElementById('search-box').value.toLowerCase();
-            if (!query) {
-                loadCurrentFolder();
-                return;
-            }
+        // Content Loading
+        async function loadContent() {
+            const container = document.getElementById('contentArea');
+            container.innerHTML = '<div class="flex justify-center p-8"><i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i></div>';
             
-            db.collection('quizzes').get().then(snapshot => {
-                let html = '<div class="folders-grid">';
-                snapshot.forEach(doc => {
-                    const quiz = doc.data();
-                    if (quiz.title.toLowerCase().includes(query)) {
-                        html += `
-                            <div class="quiz-card" onclick="startQuiz('${doc.id}', '${quiz.title}')">
-                                <h3>📝 ${quiz.title}</h3>
-                                <p>${quiz.questionCount || 0} questions</p>
-                            </div>
-                        `;
-                    }
-                });
-                html += '</div>';
-                document.getElementById('browse-content').innerHTML = html;
-            });
+            try {
+                if (currentTab === 'browse') {
+                    await loadBrowseContent(container);
+                } else if (currentTab === 'favorites') {
+                    await loadFavorites(container);
+                } else if (currentTab === 'mistakes') {
+                    await loadMistakes(container);
+                } else if (currentTab === 'history') {
+                    await loadHistory(container);
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="text-center text-red-500 p-8">Error loading content: ${error.message}</div>`;
+            }
         }
 
-        // Favorites
-        function toggleFavorite(quizId) {
-            const favorites = currentUser.favorites || [];
-            const index = favorites.indexOf(quizId);
+        async function loadBrowseContent(container) {
+            let query = db.collection('folders');
             
-            if (index > -1) {
-                favorites.splice(index, 1);
+            if (currentPath.length === 0) {
+                query = query.where('parentId', '==', null);
             } else {
-                favorites.push(quizId);
+                query = query.where('parentId', '==', currentPath[currentPath.length - 1].id);
             }
             
-            currentUser.favorites = favorites;
-            localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
+            const snapshot = await query.get();
             
-            db.collection('users').doc(currentUser.id).update({ favorites });
-            loadCurrentFolder();
-        }
-
-        function loadFavorites() {
-            const favorites = currentUser.favorites || [];
-            if (favorites.length === 0) {
-                document.getElementById('favorites-content').innerHTML = '<p>No favorites yet.</p>';
+            if (snapshot.empty && currentPath.length > 0) {
+                // Check for quizzes and files in current folder
+                await loadFolderContents(container);
                 return;
             }
             
-            let html = '<div class="folders-grid">';
-            favorites.forEach(quizId => {
-                db.collection('quizzes').doc(quizId).get().then(doc => {
-                    if (doc.exists) {
-                        const quiz = doc.data();
-                        html += `
-                            <div class="quiz-card" onclick="startQuiz('${doc.id}', '${quiz.title}')">
-                                <h3>📝 ${quiz.title}</h3>
-                                <p>${quiz.questionCount || 0} questions</p>
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 fade-in">';
+            
+            snapshot.forEach(doc => {
+                const folder = doc.data();
+                html += `
+                    <div onclick="navigateToFolder('${doc.id}', '${folder.name}')" 
+                        class="folder-card glass-card p-6 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                                <i class="fas fa-folder text-3xl text-indigo-600"></i>
                             </div>
-                        `;
-                        document.getElementById('favorites-content').innerHTML = html + '</div>';
-                    }
-                });
+                            <div>
+                                <h3 class="font-bold text-lg">${folder.name}</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">${folder.description || 'Click to open'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
+            
+            html += '</div>';
+            container.innerHTML = html;
         }
 
-        // Quiz
-        function startQuiz(quizId, title) {
-            currentPath.push({ id: quizId, name: title, type: 'quiz' });
+        async function loadFolderContents(container) {
+            const currentFolderId = currentPath[currentPath.length - 1].id;
             
-            db.collection('quizzes').doc(quizId).collection('questions').orderBy('order').get().then(snapshot => {
-                currentQuestions = [];
-                snapshot.forEach(doc => {
-                    currentQuestions.push(doc.data());
+            // Get quizzes
+            const quizzesSnapshot = await db.collection('quizzes')
+                .where('folderId', '==', currentFolderId)
+                .get();
+            
+            // Get files
+            const filesSnapshot = await db.collection('files')
+                .where('folderId', '==', currentFolderId)
+                .get();
+            
+            let html = '<div class="space-y-6 fade-in">';
+            
+            // Quizzes Section
+            if (!quizzesSnapshot.empty) {
+                html += '<div><h3 class="text-xl font-bold mb-4 flex items-center"><i class="fas fa-question-circle mr-2 text-indigo-600"></i>Quizzes</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+                
+                quizzesSnapshot.forEach(doc => {
+                    const quiz = doc.data();
+                    html += `
+                        <div onclick="startQuiz('${doc.id}')" 
+                            class="folder-card glass-card p-5 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 border-l-4 border-green-500">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-lg">${quiz.title}</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${quiz.questionCount || 0} questions • ${quiz.duration || 30} mins</p>
+                                </div>
+                                <i class="fas fa-play-circle text-3xl text-green-500"></i>
+                            </div>
+                        </div>
+                    `;
                 });
                 
-                if (currentQuestions.length === 0) {
-                    alert('No questions in this quiz');
-                    return;
-                }
+                html += '</div></div>';
+            }
+            
+            // Files Section
+            if (!filesSnapshot.empty) {
+                html += '<div><h3 class="text-xl font-bold mb-4 flex items-center"><i class="fas fa-file mr-2 text-orange-600"></i>Files</h3><div class="space-y-2">';
                 
-                document.getElementById('main-app').classList.add('hidden');
-                document.getElementById('quiz-screen').classList.remove('hidden');
-                document.getElementById('quiz-title').textContent = title;
+                filesSnapshot.forEach(doc => {
+                    const file = doc.data();
+                    const icon = getFileIcon(file.type);
+                    html += `
+                        <div onclick="viewFile('${doc.id}', '${file.name}', '${file.url}', '${file.type}')" 
+                            class="file-item flex items-center gap-4 p-4 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800">
+                            <i class="${icon} text-2xl text-orange-500"></i>
+                            <div class="flex-1">
+                                <h4 class="font-medium">${file.name}</h4>
+                                <p class="text-sm text-gray-500">${file.size || 'Unknown size'}</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    `;
+                });
                 
-                startTimer();
-                renderQuiz();
+                html += '</div></div>';
+            }
+            
+            if (quizzesSnapshot.empty && filesSnapshot.empty) {
+                html += '<div class="text-center text-gray-500 py-12"><i class="fas fa-folder-open text-5xl mb-4"></i><p>This folder is empty</p></div>';
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function getFileIcon(type) {
+            if (type.includes('pdf')) return 'fas fa-file-pdf';
+            if (type.includes('word') || type.includes('document')) return 'fas fa-file-word';
+            if (type.includes('powerpoint') || type.includes('presentation')) return 'fas fa-file-powerpoint';
+            if (type.includes('image')) return 'fas fa-file-image';
+            return 'fas fa-file';
+        }
+
+        // Quiz Functions
+        async function startQuiz(quizId) {
+            const quizDoc = await db.collection('quizzes').doc(quizId).get();
+            if (!quizDoc.exists) return;
+            
+            const quizData = quizDoc.data();
+            const questionsSnapshot = await db.collection('quizzes').doc(quizId).collection('questions').get();
+            
+            if (questionsSnapshot.empty) {
+                alert('No questions found in this quiz!');
+                return;
+            }
+            
+            currentQuiz = { id: quizId, ...quizData };
+            quizState.questions = [];
+            quizState.answers = {};
+            quizState.bookmarks = new Set();
+            quizState.flagged = new Set();
+            quizState.currentIndex = 0;
+            quizState.timeRemaining = (quizData.duration || 30) * 60;
+            quizState.startTime = new Date();
+            
+            questionsSnapshot.forEach(doc => {
+                quizState.questions.push({ id: doc.id, ...doc.data() });
             });
+            
+            // Shuffle questions
+            quizState.questions.sort(() => Math.random() - 0.5);
+            
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('quizInterface').classList.remove('hidden');
+            document.getElementById('quizTitle').textContent = quizData.title;
+            document.getElementById('totalQNum').textContent = quizState.questions.length;
+            
+            startTimer();
+            displayQuestion();
         }
 
         function startTimer() {
-            timeRemaining = 1800; // 30 minutes
             updateTimerDisplay();
-            
-            timerInterval = setInterval(() => {
-                timeRemaining--;
+            quizState.timerInterval = setInterval(() => {
+                quizState.timeRemaining--;
                 updateTimerDisplay();
                 
-                if (timeRemaining <= 300) { // 5 minutes warning
-                    document.getElementById('timer').classList.add('warning');
-                }
-                
-                if (timeRemaining <= 0) {
-                    clearInterval(timerInterval);
-                    finishQuiz();
+                if (quizState.timeRemaining <= 0) {
+                    submitQuiz();
                 }
             }, 1000);
         }
 
         function updateTimerDisplay() {
-            const minutes = Math.floor(timeRemaining / 60);
-            const seconds = timeRemaining % 60;
-            document.getElementById('timer').textContent = 
-                `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            const minutes = Math.floor(quizState.timeRemaining / 60);
+            const seconds = quizState.timeRemaining % 60;
+            const display = document.getElementById('timeRemaining');
+            display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (quizState.timeRemaining < 300) { // Less than 5 minutes
+                display.parentElement.classList.add('timer-warning');
+            }
         }
 
-        function renderQuiz() {
-            currentQuestions.sort(() => Math.random() - 0.5); // Randomize
+        function displayQuestion() {
+            const q = quizState.questions[quizState.currentIndex];
             
-            let html = '';
-            currentQuestions.forEach((q, index) => {
-                html += `
-                    <div class="question-card">
-                        <h3>Question ${index + 1}: ${q.question}</h3>
-                        <div id="options-${index}">
-                            ${q.options.map((opt, i) => `
-                                <div class="option" onclick="selectAnswer(${index}, ${i}, ${q.correctAnswer})">
-                                    ${String.fromCharCode(65 + i)}) ${opt}
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div id="explanation-${index}" style="display: none; margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 10px;">
-                            <strong>Explanation:</strong> ${q.explanation || 'No explanation'}
+            document.getElementById('currentQNum').textContent = quizState.currentIndex + 1;
+            document.getElementById('questionText').innerHTML = q.text;
+            document.getElementById('bookmarkCount').textContent = quizState.bookmarks.size;
+            
+            // Update progress
+            const progress = ((quizState.currentIndex + 1) / quizState.questions.length) * 100;
+            document.getElementById('quizProgress').style.width = `${progress}%`;
+            
+            // Update bookmark/flag buttons
+            const bookmarkBtn = document.getElementById('bookmarkBtn');
+            const flagBtn = document.getElementById('flagBtn');
+            
+            bookmarkBtn.className = `bookmark-btn p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${quizState.bookmarks.has(q.id) ? 'active' : ''}`;
+            flagBtn.className = `flag-btn p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${quizState.flagged.has(q.id) ? 'active' : ''}`;
+            
+            // Generate options
+            let optionsHtml = '';
+            const options = ['A', 'B', 'C', 'D', 'E'].slice(0, q.options.length);
+            
+            options.forEach((opt, idx) => {
+                const isSelected = quizState.answers[q.id] === idx;
+                optionsHtml += `
+                    <div onclick="selectAnswer(${idx})" 
+                        class="quiz-option p-4 rounded-lg border-2 cursor-pointer ${isSelected ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'border-gray-200 dark:border-gray-700'}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-200 dark:bg-gray-700'} flex items-center justify-center font-bold">
+                                ${opt}
+                            </div>
+                            <span>${q.options[idx]}</span>
                         </div>
                     </div>
                 `;
             });
             
-            document.getElementById('questions-container').innerHTML = html;
-            userAnswers = {};
-            correctCount = 0;
-            quizMistakes = [];
+            document.getElementById('optionsContainer').innerHTML = optionsHtml;
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = quizState.currentIndex === 0;
+            document.getElementById('nextBtn').innerHTML = quizState.currentIndex === quizState.questions.length - 1 ? 
+                'Finish<i class="fas fa-check ml-2"></i>' : 'Next<i class="fas fa-chevron-right ml-2"></i>';
         }
 
-        function selectAnswer(qIndex, selected, correct) {
-            if (userAnswers[qIndex] !== undefined) return;
-            userAnswers[qIndex] = selected;
-            
-            const options = document.getElementById(`options-${qIndex}`).children;
-            
-            if (selected === correct) {
-                options[selected].classList.add('correct');
-                correctCount++;
-            } else {
-                options[selected].classList.add('wrong');
-                options[correct].classList.add('correct');
-                
-                // Save mistake
-                quizMistakes.push({
-                    question: currentQuestions[qIndex].question,
-                    yourAnswer: currentQuestions[qIndex].options[selected],
-                    correctAnswer: currentQuestions[qIndex].options[correct],
-                    explanation: currentQuestions[qIndex].explanation
-                });
+        function selectAnswer(index) {
+            const q = quizState.questions[quizState.currentIndex];
+            quizState.answers[q.id] = index;
+            displayQuestion();
+        }
+
+        function previousQuestion() {
+            if (quizState.currentIndex > 0) {
+                quizState.currentIndex--;
+                displayQuestion();
             }
-            
-            document.getElementById(`explanation-${qIndex}`).style.display = 'block';
         }
 
-        function finishQuiz() {
-            clearInterval(timerInterval);
-            document.getElementById('timer').classList.remove('warning');
+        function nextQuestion() {
+            if (quizState.currentIndex < quizState.questions.length - 1) {
+                quizState.currentIndex++;
+                displayQuestion();
+            } else {
+                submitQuiz();
+            }
+        }
+
+        function toggleBookmark() {
+            const q = quizState.questions[quizState.currentIndex];
+            if (quizState.bookmarks.has(q.id)) {
+                quizState.bookmarks.delete(q.id);
+            } else {
+                quizState.bookmarks.add(q.id);
+            }
+            displayQuestion();
+        }
+
+        function toggleFlag() {
+            const q = quizState.questions[quizState.currentIndex];
+            if (quizState.flagged.has(q.id)) {
+                quizState.flagged.delete(q.id);
+            } else {
+                quizState.flagged.add(q.id);
+            }
+            displayQuestion();
+        }
+
+        async function saveProgress() {
+            if (!currentUser) return;
             
-            const total = currentQuestions.length;
-            const percent = Math.round((correctCount / total) * 100);
-            
-            // Save to history
-            const history = currentUser.history || [];
-            history.push({
-                quizName: currentPath[currentPath.length - 1].name,
-                score: correctCount,
-                total: total,
-                percent: percent,
-                date: new Date(),
-                mistakes: quizMistakes
+            await db.collection('students').doc(currentUser.username).collection('savedProgress').doc(currentQuiz.id).set({
+                quizId: currentQuiz.id,
+                answers: quizState.answers,
+                bookmarks: Array.from(quizState.bookmarks),
+                flagged: Array.from(quizState.flagged),
+                currentIndex: quizState.currentIndex,
+                timeRemaining: quizState.timeRemaining,
+                savedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             
-            currentUser.history = history;
-            localStorage.setItem('medquiz_user', JSON.stringify(currentUser));
-            db.collection('users').doc(currentUser.id).update({ history });
-            
-            // Show results
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.remove('hidden');
-            document.getElementById('final-score').textContent = `${correctCount}/${total}`;
-            document.getElementById('result-message').textContent = 
-                percent >= 90 ? 'Excellent! 🌟' : 
-                percent >= 70 ? 'Very Good! 👍' : 
-                percent >= 50 ? 'Good effort 💪' : 'Keep practicing 📚';
-            
-            // Prepare mistakes review
-            if (quizMistakes.length > 0) {
-                document.getElementById('mistakes-review').classList.remove('hidden');
-                let mistakesHtml = '';
-                quizMistakes.forEach((m, i) => {
-                    mistakesHtml += `
-                        <div class="mistake-review">
-                            <strong>Q${i + 1}:</strong> ${m.question}<br>
-                            <span style="color: #f44336;">Your answer: ${m.yourAnswer}</span><br>
-                            <span style="color: #4caf50;">Correct: ${m.correctAnswer}</span><br>
-                            <small>${m.explanation}</small>
-                        </div>
-                    `;
-                });
-                document.getElementById('mistakes-list').innerHTML = mistakesHtml;
-            }
+            showNotification('Progress saved successfully!', 'success');
         }
 
-        function reviewMistakes() {
-            document.getElementById('result-screen').classList.add('hidden');
-            showMainTab('mistakes');
-            document.getElementById('main-app').classList.remove('hidden');
-            loadMistakes();
-        }
-
-        // Load Mistakes
-        function loadMistakes() {
-            const history = currentUser.history || [];
-            let allMistakes = [];
+        async function submitQuiz() {
+            clearInterval(quizState.timerInterval);
             
-            history.forEach(h => {
-                if (h.mistakes) {
-                    allMistakes = allMistakes.concat(h.mistakes);
+            let correct = 0;
+            let wrong = 0;
+            const mistakes = [];
+            
+            quizState.questions.forEach(q => {
+                const userAnswer = quizState.answers[q.id];
+                if (userAnswer === q.correctAnswer) {
+                    correct++;
+                } else {
+                    wrong++;
+                    mistakes.push({
+                        question: q.text,
+                        yourAnswer: userAnswer !== undefined ? q.options[userAnswer] : 'Not answered',
+                        correctAnswer: q.options[q.correctAnswer],
+                        explanation: q.explanation || 'No explanation provided'
+                    });
                 }
             });
             
-            if (allMistakes.length === 0) {
-                document.getElementById('mistakes-content').innerHTML = '<p>No mistakes yet! Great job! 🎉</p>';
+            const score = Math.round((correct / quizState.questions.length) * 100);
+            
+            // Save to history
+            await db.collection('students').doc(currentUser.username).collection('history').add({
+                quizId: currentQuiz.id,
+                quizTitle: currentQuiz.title,
+                score: score,
+                correct: correct,
+                wrong: wrong,
+                total: quizState.questions.length,
+                completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                timeSpent: (currentQuiz.duration * 60) - quizState.timeRemaining
+            });
+            
+            // Save mistakes
+            if (mistakes.length > 0) {
+                const userRef = db.collection('students').doc(currentUser.username);
+                const existingMistakes = currentUser.data.mistakes || [];
+                await userRef.update({
+                    mistakes: [...existingMistakes, ...mistakes.slice(0, 10)] // Keep last 10 mistakes
+                });
+            }
+            
+            // Show results
+            showResults(score, correct, wrong, mistakes);
+        }
+
+        function showResults(score, correct, wrong, mistakes) {
+            document.getElementById('quizInterface').classList.add('hidden');
+            document.getElementById('resultsScreen').classList.remove('hidden');
+            
+            document.getElementById('scorePercent').textContent = `${score}%`;
+            document.getElementById('correctCount').textContent = correct;
+            document.getElementById('wrongCount').textContent = wrong;
+            
+            const emoji = score >= 80 ? '🎉' : score >= 60 ? '😊' : score >= 40 ? '😐' : '😢';
+            document.getElementById('resultEmoji').textContent = emoji;
+            
+            // Show mistakes review
+            let mistakesHtml = '';
+            if (mistakes.length > 0) {
+                mistakesHtml = '<h4 class="font-bold mb-3">Review Mistakes:</h4>';
+                mistakes.forEach((m, idx) => {
+                    mistakesHtml += `
+                        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border-l-4 border-red-500">
+                            <p class="font-medium mb-2">${idx + 1}. ${m.question}</p>
+                            <p class="text-sm text-red-600 dark:text-red-400">Your answer: ${m.yourAnswer}</p>
+                            <p class="text-sm text-green-600 dark:text-green-400">Correct answer: ${m.correctAnswer}</p>
+                            <p class="text-sm text-gray-600 mt-2"><i class="fas fa-info-circle mr-1"></i>${m.explanation}</p>
+                        </div>
+                    `;
+                });
+            } else {
+                mistakesHtml = '<div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center"><i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i><p>Perfect score! No mistakes!</p></div>';
+            }
+            
+            document.getElementById('mistakesReview').innerHTML = mistakesHtml;
+        }
+
+        function returnToBrowse() {
+            document.getElementById('resultsScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            loadContent();
+        }
+
+        function retakeQuiz() {
+            startQuiz(currentQuiz.id);
+            document.getElementById('resultsScreen').classList.add('hidden');
+        }
+
+        // Favorites, Mistakes, History
+        async function loadFavorites(container) {
+            const favorites = currentUser.data.favorites || [];
+            
+            if (favorites.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-12"><i class="fas fa-star text-5xl mb-4 text-gray-300"></i><p>No favorites yet</p></div>';
                 return;
             }
             
-            let html = '<h3>All Your Mistakes:</h3>';
-            allMistakes.forEach((m, i) => {
+            let html = '<div class="space-y-4 fade-in">';
+            // Implementation for displaying favorites
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        async function loadMistakes(container) {
+            const mistakes = currentUser.data.mistakes || [];
+            
+            if (mistakes.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-12"><i class="fas fa-check-circle text-5xl mb-4 text-green-300"></i><p>No mistakes recorded! Great job!</p></div>';
+                return;
+            }
+            
+            let html = '<div class="space-y-4 fade-in">';
+            mistakes.forEach((m, idx) => {
                 html += `
-                    <div class="mistake-review">
-                        <strong>Q${i + 1}:</strong> ${m.question}<br>
-                        <span style="color: #f44336;">Your answer: ${m.yourAnswer}</span><br>
-                        <span style="color: #4caf50;">Correct: ${m.correctAnswer}</span><br>
-                        <small>${m.explanation}</small>
+                    <div class="glass-card p-4 border-l-4 border-red-500">
+                        <p class="font-medium mb-2">${idx + 1}. ${m.question}</p>
+                        <p class="text-sm text-red-600 dark:text-red-400">Your answer: ${m.yourAnswer}</p>
+                        <p class="text-sm text-green-600 dark:text-green-400">Correct: ${m.correctAnswer}</p>
                     </div>
                 `;
             });
-            document.getElementById('mistakes-content').innerHTML = html;
+            html += '</div>';
+            container.innerHTML = html;
         }
 
-        // Load History
-        function loadHistory() {
-            const history = currentUser.history || [];
+        async function loadHistory(container) {
+            const historySnapshot = await db.collection('students')
+                .doc(currentUser.username)
+                .collection('history')
+                .orderBy('completedAt', 'desc')
+                .get();
             
-            if (history.length === 0) {
-                document.getElementById('history-content').innerHTML = '<p>No history yet.</p>';
+            if (historySnapshot.empty) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-12"><i class="fas fa-history text-5xl mb-4 text-gray-300"></i><p>No history yet</p></div>';
                 return;
             }
             
-            let html = '<table style="width: 100%; border-collapse: collapse;">';
-            html += '<tr style="background: #667eea; color: white;"><th>Quiz</th><th>Score</th><th>Date</th></tr>';
-            
-            history.slice().reverse().forEach(h => {
-                const date = h.date.toDate ? h.date.toDate().toLocaleDateString() : new Date(h.date).toLocaleDateString();
+            let html = '<div class="space-y-4 fade-in">';
+            historySnapshot.forEach(doc => {
+                const h = doc.data();
+                const date = h.completedAt ? new Date(h.completedAt.toDate()).toLocaleDateString() : 'Unknown';
+                const scoreColor = h.score >= 80 ? 'text-green-600' : h.score >= 60 ? 'text-yellow-600' : 'text-red-600';
+                
                 html += `
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px;">${h.quizName}</td>
-                        <td style="padding: 10px;">${h.score}/${h.total} (${h.percent}%)</td>
-                        <td style="padding: 10px;">${date}</td>
-                    </tr>
+                    <div class="glass-card p-4 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold">${h.quizTitle}</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">${date}</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold ${scoreColor}">${h.score}%</div>
+                            <div class="text-sm text-gray-500">${h.correct}/${h.total} correct</div>
+                        </div>
+                    </div>
                 `;
             });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Search Function
+        async function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            if (!query) {
+                loadContent();
+                return;
+            }
             
-            html += '</table>';
-            document.getElementById('history-content').innerHTML = html;
+            const container = document.getElementById('contentArea');
+            container.innerHTML = '<div class="flex justify-center p-8"><i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i></div>';
+            
+            // Search folders
+            const foldersSnapshot = await db.collection('folders')
+                .where('name', '>=', query)
+                .where('name', '<=', query + '\uf8ff')
+                .get();
+            
+            // Search quizzes
+            const quizzesSnapshot = await db.collection('quizzes')
+                .where('title', '>=', query)
+                .where('title', '<=', query + '\uf8ff')
+                .get();
+            
+            let html = '<div class="space-y-6 fade-in">';
+            
+            if (!foldersSnapshot.empty) {
+                html += '<div><h3 class="text-xl font-bold mb-4">Folders</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+                foldersSnapshot.forEach(doc => {
+                    const folder = doc.data();
+                    html += `
+                        <div onclick="navigateToFolder('${doc.id}', '${folder.name}')" 
+                            class="folder-card glass-card p-4 cursor-pointer">
+                            <i class="fas fa-folder text-2xl text-indigo-600 mr-3"></i>
+                            <span class="font-medium">${folder.name}</span>
+                        </div>
+                    `;
+                });
+                html += '</div></div>';
+            }
+            
+            if (!quizzesSnapshot.empty) {
+                html += '<div><h3 class="text-xl font-bold mb-4">Quizzes</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+                quizzesSnapshot.forEach(doc => {
+                    const quiz = doc.data();
+                    html += `
+                        <div onclick="startQuiz('${doc.id}')" 
+                            class="folder-card glass-card p-4 cursor-pointer border-l-4 border-green-500">
+                            <i class="fas fa-question-circle text-2xl text-green-600 mr-3"></i>
+                            <span class="font-medium">${quiz.title}</span>
+                        </div>
+                    `;
+                });
+                html += '</div></div>';
+            }
+            
+            if (foldersSnapshot.empty && quizzesSnapshot.empty) {
+                html += '<div class="text-center text-gray-500 py-12"><i class="fas fa-search text-5xl mb-4 text-gray-300"></i><p>No results found</p></div>';
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // File Viewer
+        function viewFile(id, name, url, type) {
+            document.getElementById('fileTitle').textContent = name;
+            document.getElementById('downloadBtn').href = url;
+            
+            const viewer = document.getElementById('fileViewer');
+            
+            if (type.includes('pdf')) {
+                viewer.innerHTML = `<iframe src="${url}" class="w-full h-full" frameborder="0"></iframe>`;
+            } else if (type.includes('image')) {
+                viewer.innerHTML = `<img src="${url}" class="max-w-full mx-auto" style="max-height: 100%;">`;
+            } else {
+                viewer.innerHTML = `<div class="text-center p-8"><i class="fas fa-file text-6xl text-gray-400 mb-4"></i><p>Preview not available for this file type</p><a href="${url}" download class="mt-4 inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg">Download File</a></div>`;
+            }
+            
+            document.getElementById('fileModal').classList.remove('hidden');
+        }
+
+        function closeFileModal() {
+            document.getElementById('fileModal').classList.add('hidden');
+        }
+
+        // Notifications
+        async function loadNotifications() {
+            if (!currentUser) return;
+            
+            const notifSnapshot = await db.collection('notifications')
+                .where('recipient', 'in', ['all', currentUser.username])
+                .where('read', '==', false)
+                .orderBy('timestamp', 'desc')
+                .get();
+            
+            const badge = document.getElementById('notifBadge');
+            if (notifSnapshot.empty) {
+                badge.classList.add('hidden');
+            } else {
+                badge.textContent = notifSnapshot.size;
+                badge.classList.remove('hidden');
+            }
+        }
+
+        function toggleNotifications() {
+            const panel = document.getElementById('notificationsPanel');
+            panel.classList.toggle('hidden');
+        }
+
+        function showNotification(message, type = 'info') {
+            // Implementation for showing toast notifications
         }
 
         // Dark Mode
@@ -956,40 +1206,52 @@
             localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
         }
 
-        // Check for dark mode preference
+        // Check saved dark mode preference
         if (localStorage.getItem('darkMode') === 'true') {
             document.body.classList.add('dark-mode');
         }
 
-        // Notifications
-        function checkNotifications() {
-            db.collection('notifications').where('active', '==', true).get().then(snapshot => {
-                snapshot.forEach(doc => {
-                    const notif = doc.data();
-                    const now = new Date();
-                    const expiry = notif.expiry.toDate();
-                    
-                    if (now < expiry) {
-                        showNotification(notif.message, doc.id);
-                    }
-                });
-            });
+        // Font Size
+        function adjustFontSize(delta) {
+            fontSize += delta;
+            if (fontSize < 12) fontSize = 12;
+            if (fontSize > 24) fontSize = 24;
+            document.body.style.fontSize = `${fontSize}px`;
         }
 
-        function showNotification(message, id) {
-            const div = document.createElement('div');
-            div.className = 'notification';
-            div.innerHTML = `
-                ${message}
-                <span class="close" onclick="this.parentElement.remove()">×</span>
-            `;
-            document.body.appendChild(div);
+        // Calculator
+        function toggleCalculator() {
+            document.getElementById('calculator').classList.toggle('hidden');
+        }
+
+        let calcExpression = '';
+        function calcInput(val) {
+            const display = document.getElementById('calcDisplay');
             
-            setTimeout(() => {
-                if (div.parentElement) div.remove();
-            }, 10000); // Auto remove after 10 seconds
+            if (val === 'C') {
+                calcExpression = '';
+                display.value = '';
+            } else if (val === '=') {
+                try {
+                    calcExpression = eval(calcExpression).toString();
+                    display.value = calcExpression;
+                } catch {
+                    display.value = 'Error';
+                    calcExpression = '';
+                }
+            } else {
+                calcExpression += val;
+                display.value = calcExpression;
+            }
+        }
+
+        // Close modals on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('fileModal');
+            if (event.target === modal) {
+                closeFileModal();
+            }
         }
     </script>
 </body>
-
 </html>
