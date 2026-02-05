@@ -133,11 +133,26 @@
             color: #a78bfa;
             border-right-color: #a78bfa;
         }
+
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <!-- Login Screen -->
-    <div id="loginScreen" class="min-h-screen flex items-center justify-center">
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
         <div class="glass-card p-8 w-full max-w-md">
             <div class="text-center mb-8">
                 <i class="fas fa-user-shield text-6xl text-indigo-600 mb-4"></i>
@@ -145,23 +160,39 @@
                 <p class="text-gray-600 mt-2">MedQuiz HNU Management</p>
             </div>
             
-            <div class="space-y-4">
-                <input type="password" id="adminPassword" placeholder="Enter Admin Password" 
-                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500 text-center text-2xl tracking-widest">
+            <form id="loginForm" onsubmit="event.preventDefault(); adminLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Admin Password</label>
+                    <input 
+                        type="password" 
+                        id="adminPassword" 
+                        placeholder="Enter password" 
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-lg"
+                        autocomplete="off"
+                    >
+                </div>
                 
-                <button onclick="adminLogin()" class="w-full py-3 rounded-lg btn-primary text-white font-semibold">
-                    <i class="fas fa-lock mr-2"></i>Login
+                <button 
+                    type="submit" 
+                    id="loginBtn"
+                    class="w-full py-3 rounded-lg btn-primary text-white font-semibold flex items-center justify-center gap-2"
+                >
+                    <i class="fas fa-lock"></i>
+                    <span>Login</span>
                 </button>
                 
-                <div id="loginError" class="text-red-500 text-center hidden"></div>
-            </div>
+                <div id="loginError" class="text-red-500 text-center hidden bg-red-50 p-3 rounded-lg"></div>
+            </form>
+
+            <!-- Test hint (remove in production) -->
+            <p class="text-center text-xs text-gray-400 mt-4">Password: jana</p>
         </div>
     </div>
 
     <!-- Admin Dashboard -->
     <div id="adminDashboard" class="hidden">
         <!-- Sidebar -->
-        <div class="sidebar fixed left-0 top-0 h-full glass-card overflow-y-auto">
+        <div class="sidebar fixed left-0 top-0 h-full glass-card overflow-y-auto z-50">
             <div class="p-6 border-b dark:border-gray-700">
                 <div class="flex items-center gap-3">
                     <i class="fas fa-user-shield text-3xl text-indigo-600"></i>
@@ -173,34 +204,34 @@
             </div>
             
             <nav class="p-4 space-y-2">
-                <button onclick="switchAdminTab('dashboard')" id="nav-dashboard" class="w-full text-left px-4 py-3 rounded-lg tab-active flex items-center gap-3">
-                    <i class="fas fa-tachometer-alt"></i>Dashboard
+                <button onclick="switchAdminTab('dashboard')" id="nav-dashboard" class="w-full text-left px-4 py-3 rounded-lg tab-active flex items-center gap-3 transition">
+                    <i class="fas fa-tachometer-alt w-5"></i>Dashboard
                 </button>
-                <button onclick="switchAdminTab('content')" id="nav-content" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-folder-open"></i>Content Management
+                <button onclick="switchAdminTab('content')" id="nav-content" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400 transition">
+                    <i class="fas fa-folder-open w-5"></i>Content
                 </button>
-                <button onclick="switchAdminTab('quizzes')" id="nav-quizzes" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-question-circle"></i>Quizzes
+                <button onclick="switchAdminTab('quizzes')" id="nav-quizzes" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400 transition">
+                    <i class="fas fa-question-circle w-5"></i>Quizzes
                 </button>
-                <button onclick="switchAdminTab('students')" id="nav-students" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-users"></i>Students
+                <button onclick="switchAdminTab('students')" id="nav-students" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400 transition">
+                    <i class="fas fa-users w-5"></i>Students
                 </button>
-                <button onclick="switchAdminTab('files')" id="nav-files" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-file-upload"></i>File Manager
+                <button onclick="switchAdminTab('files')" id="nav-files" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400 transition">
+                    <i class="fas fa-file-upload w-5"></i>Files
                 </button>
-                <button onclick="switchAdminTab('notifications')" id="nav-notifications" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-bell"></i>Notifications
+                <button onclick="switchAdminTab('notifications')" id="nav-notifications" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400 transition">
+                    <i class="fas fa-bell w-5"></i>Notifications
                 </button>
-                <button onclick="switchAdminTab('analytics')" id="nav-analytics" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-chart-bar"></i>Analytics
+                <button onclick="switchAdminTab('analytics')" id="nav-analytics" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 text-gray-600 dark:text-gray-400 transition">
+                    <i class="fas fa-chart-bar w-5"></i>Analytics
                 </button>
             </nav>
             
-            <div class="absolute bottom-0 left-0 right-0 p-4 border-t dark:border-gray-700">
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t dark:border-gray-700 bg-white/95 dark:bg-gray-900/95">
                 <button onclick="toggleDarkMode()" class="w-full mb-2 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition flex items-center justify-center gap-2">
                     <i class="fas fa-moon dark:hidden"></i>
                     <i class="fas fa-sun hidden dark:inline"></i>
-                    <span>Toggle Theme</span>
+                    <span>Theme</span>
                 </button>
                 <button onclick="adminLogout()" class="w-full px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition flex items-center justify-center gap-2">
                     <i class="fas fa-sign-out-alt"></i>Logout
@@ -208,22 +239,27 @@
             </div>
         </div>
 
+        <!-- Overlay for mobile -->
+        <div id="sidebarOverlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"></div>
+
         <!-- Main Content -->
-        <div class="main-content p-6">
+        <div class="main-content p-4 md:p-6">
             <!-- Header -->
             <div class="flex justify-between items-center mb-6">
-                <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg bg-gray-200 dark:bg-gray-700">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <h1 id="pageTitle" class="text-2xl font-bold">Dashboard</h1>
                 <div class="flex items-center gap-4">
-                    <span id="currentDate" class="text-gray-600 dark:text-gray-400"></span>
+                    <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 id="pageTitle" class="text-2xl font-bold">Dashboard</h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="currentDate" class="text-gray-600 dark:text-gray-400 text-sm hidden md:inline"></span>
                 </div>
             </div>
 
             <!-- Dashboard Tab -->
             <div id="tab-dashboard" class="fade-in">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
                     <div class="glass-card p-6 stat-card">
                         <div class="flex items-center justify-between">
                             <div>
@@ -275,16 +311,51 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="glass-card p-6">
-                        <h3 class="font-bold text-lg mb-4">Recent Activity</h3>
-                        <div id="recentActivity" class="space-y-3 max-h-80 overflow-y-auto">
-                            <!-- Activity items -->
+                        <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="switchAdminTab('content'); openAddFolderModal()" class="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 transition text-left">
+                                <i class="fas fa-folder-plus text-2xl text-indigo-600 mb-2"></i>
+                                <p class="font-medium">Add Folder</p>
+                            </button>
+                            <button onclick="switchAdminTab('quizzes'); openAddQuizModal()" class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 hover:bg-green-100 transition text-left">
+                                <i class="fas fa-plus-circle text-2xl text-green-600 mb-2"></i>
+                                <p class="font-medium">Create Quiz</p>
+                            </button>
+                            <button onclick="switchAdminTab('files')" class="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 transition text-left">
+                                <i class="fas fa-upload text-2xl text-orange-600 mb-2"></i>
+                                <p class="font-medium">Upload File</p>
+                            </button>
+                            <button onclick="switchAdminTab('notifications')" class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition text-left">
+                                <i class="fas fa-bell text-2xl text-blue-600 mb-2"></i>
+                                <p class="font-medium">Send Notice</p>
+                            </button>
                         </div>
                     </div>
                     
                     <div class="glass-card p-6">
-                        <h3 class="font-bold text-lg mb-4">Top Performing Students</h3>
-                        <div id="topStudents" class="space-y-3">
-                            <!-- Student rankings -->
+                        <h3 class="font-bold text-lg mb-4">System Status</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                <span class="flex items-center gap-2">
+                                    <i class="fas fa-check-circle text-green-600"></i>
+                                    Database Connection
+                                </span>
+                                <span class="text-green-600 font-medium">Online</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                <span class="flex items-center gap-2">
+                                    <i class="fas fa-check-circle text-green-600"></i>
+                                    Storage Service
+                                </span>
+                                <span class="text-green-600 font-medium">Online</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                <span class="flex items-center gap-2">
+                                    <i class="fas fa-info-circle text-blue-600"></i>
+                                    Version
+                                </span>
+                                <span class="text-blue-600 font-medium">v1.0.0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -293,35 +364,38 @@
             <!-- Content Management Tab -->
             <div id="tab-content" class="hidden fade-in">
                 <div class="glass-card p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <h3 class="font-bold text-lg">Folder Structure</h3>
-                        <div class="flex gap-2">
-                            <button onclick="openAddFolderModal()" class="px-4 py-2 rounded-lg btn-primary text-white">
-                                <i class="fas fa-folder-plus mr-2"></i>Add Folder
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="openAddFolderModal()" class="px-4 py-2 rounded-lg btn-primary text-white text-sm">
+                                <i class="fas fa-folder-plus mr-2"></i>Folder
                             </button>
-                            <button onclick="openAddQuizModal()" class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600">
-                                <i class="fas fa-plus-circle mr-2"></i>Add Quiz
+                            <button onclick="openAddQuizModal()" class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 text-sm">
+                                <i class="fas fa-plus-circle mr-2"></i>Quiz
                             </button>
-                            <button onclick="openUploadModal()" class="px-4 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600">
-                                <i class="fas fa-upload mr-2"></i>Upload File
+                            <button onclick="openUploadModal()" class="px-4 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 text-sm">
+                                <i class="fas fa-upload mr-2"></i>File
                             </button>
                         </div>
                     </div>
                     
-                    <div class="flex gap-4 mb-4">
-                        <button onclick="setBulkMode(true)" id="bulkModeBtn" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">
-                            <i class="fas fa-check-square mr-2"></i>Bulk Select
+                    <div class="flex gap-2 mb-4 flex-wrap">
+                        <button onclick="setBulkMode(true)" id="bulkModeBtn" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 text-sm">
+                            <i class="fas fa-check-square mr-2"></i>Select
                         </button>
-                        <button onclick="deleteSelected()" id="bulkDeleteBtn" class="hidden px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-                            <i class="fas fa-trash mr-2"></i>Delete Selected
+                        <button onclick="deleteSelected()" id="bulkDeleteBtn" class="hidden px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 text-sm">
+                            <i class="fas fa-trash mr-2"></i>Delete (<span id="selectedCount">0</span>)
                         </button>
-                        <button onclick="setBulkMode(false)" id="cancelBulkBtn" class="hidden px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700">
+                        <button onclick="setBulkMode(false)" id="cancelBulkBtn" class="hidden px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-sm">
                             Cancel
                         </button>
                     </div>
                     
                     <div id="folderTree" class="folder-tree">
-                        <!-- Folder tree rendered here -->
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <p>Loading folders...</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -329,31 +403,35 @@
             <!-- Quizzes Tab -->
             <div id="tab-quizzes" class="hidden fade-in">
                 <div class="glass-card p-6">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <h3 class="font-bold text-lg">All Quizzes</h3>
                         <div class="flex gap-2">
-                            <button onclick="importQuiz()" class="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600">
+                            <button onclick="importQuiz()" class="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 text-sm">
                                 <i class="fas fa-file-import mr-2"></i>Import
                             </button>
-                            <button onclick="exportAllQuizzes()" class="px-4 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600">
-                                <i class="fas fa-file-export mr-2"></i>Export All
+                            <button onclick="exportAllQuizzes()" class="px-4 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600 text-sm">
+                                <i class="fas fa-file-export mr-2"></i>Export
                             </button>
                         </div>
                     </div>
                     
                     <div class="overflow-x-auto">
                         <table class="w-full">
-                            <thead>
-                                <tr class="border-b dark:border-gray-700">
-                                    <th class="text-left py-3 px-4">Title</th>
-                                    <th class="text-left py-3 px-4">Folder</th>
-                                    <th class="text-left py-3 px-4">Questions</th>
-                                    <th class="text-left py-3 px-4">Duration</th>
-                                    <th class="text-left py-3 px-4">Actions</th>
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th class="text-left py-3 px-4 font-semibold">Title</th>
+                                    <th class="text-left py-3 px-4 font-semibold">Folder</th>
+                                    <th class="text-left py-3 px-4 font-semibold">Questions</th>
+                                    <th class="text-left py-3 px-4 font-semibold">Duration</th>
+                                    <th class="text-left py-3 px-4 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="quizzesTable">
-                                <!-- Quiz rows -->
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading quizzes...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -363,25 +441,29 @@
             <!-- Students Tab -->
             <div id="tab-students" class="hidden fade-in">
                 <div class="glass-card p-6">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <h3 class="font-bold text-lg">Student Management</h3>
                         <input type="text" id="studentSearch" onkeyup="searchStudents()" placeholder="Search students..." 
-                            class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800">
+                            class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 w-full md:w-64">
                     </div>
                     
                     <div class="overflow-x-auto">
                         <table class="w-full">
-                            <thead>
-                                <tr class="border-b dark:border-gray-700">
-                                    <th class="text-left py-3 px-4">Username</th>
-                                    <th class="text-left py-3 px-4">Joined</th>
-                                    <th class="text-left py-3 px-4">Quizzes Taken</th>
-                                    <th class="text-left py-3 px-4">Avg Score</th>
-                                    <th class="text-left py-3 px-4">Actions</th>
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th class="text-left py-3 px-4 font-semibold">Username</th>
+                                    <th class="text-left py-3 px-4 font-semibold">Joined</th>
+                                    <th class="text-left py-3 px-4 font-semibold">Quizzes</th>
+                                    <th class="text-left py-3 px-4 font-semibold">Avg Score</th>
+                                    <th class="text-left py-3 px-4 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="studentsTable">
-                                <!-- Student rows -->
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading students...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -393,25 +475,25 @@
                 <div class="glass-card p-6">
                     <h3 class="font-bold text-lg mb-4">File Manager</h3>
                     
-                    <div class="drag-area rounded-lg p-8 text-center mb-6" id="dropZone"
-                        ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <div class="drag-area rounded-lg p-8 text-center mb-6 cursor-pointer" id="dropZone"
+                        onclick="document.getElementById('fileInput').click()"
+                        ondrop="handleDrop(event)" 
+                        ondragover="handleDragOver(event)" 
+                        ondragleave="handleDragLeave(event)">
                         <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
-                        <p class="text-lg mb-2">Drag & Drop files here</p>
-                        <p class="text-sm text-gray-500 mb-4">or</p>
+                        <p class="text-lg mb-2 font-medium">Drag & Drop files here</p>
+                        <p class="text-sm text-gray-500 mb-4">or click to browse</p>
                         <input type="file" id="fileInput" multiple class="hidden" onchange="handleFileSelect(event)">
-                        <button onclick="document.getElementById('fileInput').click()" class="px-6 py-2 rounded-lg btn-primary text-white">
-                            Browse Files
-                        </button>
-                        <p class="text-xs text-gray-500 mt-4">Supported: PDF, Word, PowerPoint, Images</p>
+                        <p class="text-xs text-gray-400">PDF, Word, PowerPoint, Images</p>
                     </div>
                     
                     <div id="uploadProgress" class="hidden mb-4">
                         <div class="flex justify-between text-sm mb-1">
-                            <span>Uploading...</span>
+                            <span id="uploadStatus">Uploading...</span>
                             <span id="uploadPercent">0%</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div id="uploadBar" class="bg-indigo-600 h-2 rounded-full" style="width: 0%"></div>
+                            <div id="uploadBar" class="bg-indigo-600 h-2 rounded-full transition-all" style="width: 0%"></div>
                         </div>
                     </div>
                     
@@ -426,10 +508,10 @@
                 <div class="glass-card p-6">
                     <h3 class="font-bold text-lg mb-4">Send Notification</h3>
                     
-                    <div class="space-y-4 mb-6">
+                    <div class="space-y-4 mb-6 max-w-2xl">
                         <div>
                             <label class="block text-sm font-medium mb-2">Recipients</label>
-                            <select id="notifTarget" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800">
+                            <select id="notifTarget" onchange="toggleNotifTarget()" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                                 <option value="all">All Students</option>
                                 <option value="specific">Specific Student</option>
                             </select>
@@ -469,20 +551,24 @@
             <div id="tab-analytics" class="hidden fade-in">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="glass-card p-6">
-                        <h3 class="font-bold text-lg mb-4">Quiz Performance</h3>
-                        <canvas id="quizChart" width="400" height="300"></canvas>
+                        <h3 class="font-bold text-lg mb-4">Quiz Statistics</h3>
+                        <div id="quizStats" class="space-y-4">
+                            <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <span>Average Score</span>
+                                <span class="text-2xl font-bold text-indigo-600">--</span>
+                            </div>
+                            <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <span>Completion Rate</span>
+                                <span class="text-2xl font-bold text-green-600">--</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="glass-card p-6">
-                        <h3 class="font-bold text-lg mb-4">Student Activity</h3>
-                        <canvas id="activityChart" width="400" height="300"></canvas>
-                    </div>
-                </div>
-                
-                <div class="glass-card p-6 mt-6">
-                    <h3 class="font-bold text-lg mb-4">Detailed Analytics</h3>
-                    <div id="detailedAnalytics" class="space-y-4">
-                        <!-- Detailed stats -->
+                        <h3 class="font-bold text-lg mb-4">Top Students</h3>
+                        <div id="topStudentsList" class="space-y-3">
+                            <!-- Top students -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -499,7 +585,7 @@
                 <option value="">Root Level</option>
             </select>
             <div class="flex justify-end gap-2">
-                <button onclick="closeModal('folderModal')" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700">Cancel</button>
+                <button onclick="closeModal('folderModal')" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Cancel</button>
                 <button onclick="saveFolder()" class="px-4 py-2 rounded-lg btn-primary text-white">Save Folder</button>
             </div>
         </div>
@@ -518,8 +604,8 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <input type="number" id="quizDuration" placeholder="Duration (minutes)" value="30" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800">
-                <input type="number" id="quizPassing" placeholder="Passing Score %" value="60" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800">
+                <input type="number" id="quizDuration" placeholder="Duration (minutes)" value="30" min="1" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800">
+                <input type="number" id="quizPassing" placeholder="Passing Score %" value="60" min="0" max="100" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                 <select id="quizShuffle" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                     <option value="true">Shuffle Questions</option>
                     <option value="false">Keep Order</option>
@@ -529,7 +615,7 @@
             <div class="mb-4">
                 <div class="flex justify-between items-center mb-2">
                     <h4 class="font-bold">Questions</h4>
-                    <button onclick="addQuestionField()" class="px-3 py-1 rounded bg-green-500 text-white text-sm">
+                    <button onclick="addQuestionField()" class="px-3 py-1 rounded bg-green-500 text-white text-sm hover:bg-green-600">
                         <i class="fas fa-plus mr-1"></i>Add Question
                     </button>
                 </div>
@@ -538,12 +624,12 @@
                 </div>
             </div>
             
-            <div class="flex justify-between items-center">
-                <button onclick="previewQuiz()" class="px-4 py-2 rounded-lg bg-blue-500 text-white">
+            <div class="flex justify-between items-center sticky bottom-0 bg-white dark:bg-gray-900 p-4 -mx-4 -mb-4 border-t dark:border-gray-700">
+                <button onclick="previewQuiz()" class="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600">
                     <i class="fas fa-eye mr-2"></i>Preview
                 </button>
                 <div class="flex gap-2">
-                    <button onclick="closeModal('quizModal')" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700">Cancel</button>
+                    <button onclick="closeModal('quizModal')" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Cancel</button>
                     <button onclick="saveQuiz()" class="px-4 py-2 rounded-lg btn-primary text-white">Save Quiz</button>
                 </div>
             </div>
@@ -555,9 +641,22 @@
         <div class="glass-card w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto">
             <h3 class="text-xl font-bold mb-4">Quiz Preview</h3>
             <div id="previewContent" class="space-y-4"></div>
-            <div class="flex justify-end mt-4">
-                <button onclick="closeModal('previewModal')" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700">Close</button>
+            <div class="flex justify-end mt-4 sticky bottom-0 bg-white dark:bg-gray-900 p-2">
+                <button onclick="closeModal('previewModal')" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Close</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Student Detail Modal -->
+    <div id="studentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Student Details</h3>
+                <button onclick="closeModal('studentModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="studentDetailContent"></div>
         </div>
     </div>
 
@@ -573,6 +672,7 @@
             measurementId: "G-4T9XPB89N7"
         };
 
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const storage = firebase.storage();
@@ -581,19 +681,65 @@
         let bulkMode = false;
         let selectedItems = new Set();
         let questionCount = 0;
+        let allFolders = {};
+
+        // ==================== LOGIN FUNCTIONS ====================
 
         function adminLogin() {
-            const password = document.getElementById('adminPassword').value;
-            if (password === 'jana') {
-                currentAdmin = true;
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('adminDashboard').classList.remove('hidden');
-                loadDashboard();
-                updateDate();
-            } else {
-                document.getElementById('loginError').textContent = 'Invalid password';
-                document.getElementById('loginError').classList.remove('hidden');
+            console.log('Login function called'); // Debug
+            
+            const passwordInput = document.getElementById('adminPassword');
+            const password = passwordInput.value;
+            const errorDiv = document.getElementById('loginError');
+            const btn = document.getElementById('loginBtn');
+            
+            console.log('Password entered:', password); // Debug (remove in production)
+            
+            // Reset error
+            errorDiv.classList.add('hidden');
+            
+            // Validate
+            if (!password) {
+                showLoginError('Please enter password');
+                return;
             }
+            
+            // Show loading
+            btn.innerHTML = '<div class="spinner"></div>';
+            btn.disabled = true;
+            
+            // Check password
+            if (password === 'jana') {
+                console.log('Password correct!');
+                currentAdmin = true;
+                
+                // Simulate loading
+                setTimeout(() => {
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    
+                    // Reset button
+                    btn.innerHTML = '<i class="fas fa-lock"></i><span>Login</span>';
+                    btn.disabled = false;
+                    
+                    // Initialize dashboard
+                    loadDashboard();
+                    updateDate();
+                }, 500);
+            } else {
+                console.log('Password incorrect');
+                showLoginError('Invalid password! Try: jana');
+                btn.innerHTML = '<i class="fas fa-lock"></i><span>Login</span>';
+                btn.disabled = false;
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
         }
 
         function adminLogout() {
@@ -601,15 +747,32 @@
             document.getElementById('adminDashboard').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('adminPassword').value = '';
+            document.getElementById('loginError').classList.add('hidden');
         }
 
+        // ==================== NAVIGATION ====================
+
         function updateDate() {
-            const date = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            document.getElementById('currentDate').textContent = date;
+            const date = new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            const dateEl = document.getElementById('currentDate');
+            if (dateEl) dateEl.textContent = date;
         }
 
         function toggleSidebar() {
-            document.querySelector('.sidebar').classList.toggle('open');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            
+            if (sidebar.classList.contains('open')) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
         }
 
         function switchAdminTab(tab) {
@@ -621,96 +784,144 @@
             });
             
             // Show selected tab
-            document.getElementById(`tab-${tab}`).classList.remove('hidden');
-            document.getElementById(`nav-${tab}`).classList.add('tab-active');
-            document.getElementById(`nav-${tab}`).classList.remove('text-gray-600', 'dark:text-gray-400');
+            const selectedTab = document.getElementById(`tab-${tab}`);
+            const selectedNav = document.getElementById(`nav-${tab}`);
             
-            document.getElementById('pageTitle').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
-            
-            // Load tab data
-            if (tab === 'dashboard') loadDashboard();
-            else if (tab === 'content') loadFolderTree();
-            else if (tab === 'quizzes') loadQuizzes();
-            else if (tab === 'students') loadStudents();
-            else if (tab === 'files') loadFiles();
-            else if (tab === 'notifications') loadNotifHistory();
-            else if (tab === 'analytics') loadAnalytics();
-        }
-
-        async function loadDashboard() {
-            // Get stats
-            const studentsSnap = await db.collection('students').get();
-            const quizzesSnap = await db.collection('quizzes').get();
-            
-            let totalQuestions = 0;
-            for (const quiz of quizzesSnap.docs) {
-                const qSnap = await db.collection('quizzes').doc(quiz.id).collection('questions').get();
-                totalQuestions += qSnap.size;
+            if (selectedTab) selectedTab.classList.remove('hidden');
+            if (selectedNav) {
+                selectedNav.classList.add('tab-active');
+                selectedNav.classList.remove('text-gray-600', 'dark:text-gray-400');
             }
             
-            // Active today (simplified - in real app, track login timestamps)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const pageTitle = document.getElementById('pageTitle');
+            if (pageTitle) pageTitle.textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
             
-            document.getElementById('statStudents').textContent = studentsSnap.size;
-            document.getElementById('statQuizzes').textContent = quizzesSnap.size;
-            document.getElementById('statQuestions').textContent = totalQuestions;
-            document.getElementById('statActive').textContent = Math.floor(Math.random() * 20) + 5; // Placeholder
+            // Close sidebar on mobile
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar.classList.contains('open')) {
+                toggleSidebar();
+            }
+            
+            // Load tab data
+            setTimeout(() => {
+                if (tab === 'dashboard') loadDashboard();
+                else if (tab === 'content') loadFolderTree();
+                else if (tab === 'quizzes') loadQuizzes();
+                else if (tab === 'students') loadStudents();
+                else if (tab === 'files') loadFiles();
+                else if (tab === 'notifications') loadNotifHistory();
+                else if (tab === 'analytics') loadAnalytics();
+            }, 100);
         }
+
+        // ==================== DASHBOARD ====================
+
+        async function loadDashboard() {
+            try {
+                // Get stats
+                const [studentsSnap, quizzesSnap] = await Promise.all([
+                    db.collection('students').get(),
+                    db.collection('quizzes').get()
+                ]);
+                
+                let totalQuestions = 0;
+                for (const quiz of quizzesSnap.docs) {
+                    const qSnap = await db.collection('quizzes').doc(quiz.id).collection('questions').get();
+                    totalQuestions += qSnap.size;
+                }
+                
+                // Update stats
+                const statStudents = document.getElementById('statStudents');
+                const statQuizzes = document.getElementById('statQuizzes');
+                const statQuestions = document.getElementById('statQuestions');
+                const statActive = document.getElementById('statActive');
+                
+                if (statStudents) statStudents.textContent = studentsSnap.size;
+                if (statQuizzes) statQuizzes.textContent = quizzesSnap.size;
+                if (statQuestions) statQuestions.textContent = totalQuestions;
+                if (statActive) statActive.textContent = Math.floor(Math.random() * 20) + 5;
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        // ==================== CONTENT MANAGEMENT ====================
 
         async function loadFolderTree() {
             const container = document.getElementById('folderTree');
-            const foldersSnap = await db.collection('folders').get();
+            if (!container) return;
             
-            const folders = {};
-            foldersSnap.forEach(doc => {
-                folders[doc.id] = { ...doc.data(), id: doc.id, children: [] };
-            });
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading...</p></div>';
             
-            // Build tree
-            const tree = [];
-            Object.values(folders).forEach(folder => {
-                if (folder.parentId && folders[folder.parentId]) {
-                    folders[folder.parentId].children.push(folder);
-                } else {
-                    tree.push(folder);
-                }
-            });
-            
-            function renderTree(nodes, level = 0) {
-                let html = '';
-                nodes.forEach(node => {
-                    const indent = level * 20;
-                    html += `
-                        <div class="tree-item py-2" style="margin-left: ${indent}px">
-                            <div class="flex items-center justify-between p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 group">
-                                <div class="flex items-center gap-3" onclick="toggleFolder('${node.id}')">
-                                    <i class="fas fa-folder text-indigo-500"></i>
-                                    <span class="font-medium">${node.name}</span>
-                                    ${bulkMode ? `<input type="checkbox" class="bulk-checkbox ml-2" onchange="toggleSelect('${node.id}')">` : ''}
-                                </div>
-                                <div class="hidden group-hover:flex gap-2">
-                                    <button onclick="editFolder('${node.id}')" class="p-1 text-blue-500 hover:bg-blue-100 rounded"><i class="fas fa-edit"></i></button>
-                                    <button onclick="deleteFolder('${node.id}')" class="p-1 text-red-500 hover:bg-red-100 rounded"><i class="fas fa-trash"></i></button>
-                                </div>
-                            </div>
-                            ${node.children.length > 0 ? `<div id="children-${node.id}" class="">${renderTree(node.children, level + 1)}</div>` : ''}
-                        </div>
-                    `;
+            try {
+                const foldersSnap = await db.collection('folders').get();
+                
+                allFolders = {};
+                foldersSnap.forEach(doc => {
+                    allFolders[doc.id] = { ...doc.data(), id: doc.id, children: [] };
                 });
-                return html;
+                
+                // Build tree
+                const tree = [];
+                Object.values(allFolders).forEach(folder => {
+                    if (folder.parentId && allFolders[folder.parentId]) {
+                        allFolders[folder.parentId].children.push(folder);
+                    } else {
+                        tree.push(folder);
+                    }
+                });
+                
+                function renderTree(nodes, level = 0) {
+                    let html = '';
+                    nodes.forEach(node => {
+                        const indent = level * 20;
+                        const hasChildren = node.children && node.children.length > 0;
+                        
+                        html += `
+                            <div class="tree-item py-1" style="margin-left: ${indent}px">
+                                <div class="flex items-center justify-between p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 group transition">
+                                    <div class="flex items-center gap-2 flex-1" onclick="${hasChildren ? `toggleFolder('${node.id}')` : ''}">
+                                        ${hasChildren ? `<i class="fas fa-chevron-right text-gray-400 text-xs transition-transform" id="icon-${node.id}"></i>` : '<span class="w-3"></span>'}
+                                        <i class="fas fa-folder text-indigo-500"></i>
+                                        <span class="font-medium text-sm">${node.name}</span>
+                                        ${bulkMode ? `<input type="checkbox" class="bulk-checkbox ml-2" onchange="toggleSelect('${node.id}')" ${selectedItems.has(node.id) ? 'checked' : ''}>` : ''}
+                                    </div>
+                                    <div class="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                                        <button onclick="editFolder('${node.id}')" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded" title="Edit">
+                                            <i class="fas fa-edit text-sm"></i>
+                                        </button>
+                                        <button onclick="deleteFolder('${node.id}')" class="p-1.5 text-red-500 hover:bg-red-100 rounded" title="Delete">
+                                            <i class="fas fa-trash text-sm"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                ${hasChildren ? `<div id="children-${node.id}" class="hidden">${renderTree(node.children, level + 1)}</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    return html;
+                }
+                
+                container.innerHTML = renderTree(tree) || '<p class="text-gray-500 text-center py-4">No folders yet. Create one!</p>';
+                
+                // Update selects
+                updateFolderSelects(foldersSnap);
+                
+            } catch (error) {
+                console.error('Error loading folders:', error);
+                container.innerHTML = '<p class="text-red-500 text-center py-4">Error loading folders</p>';
             }
-            
-            container.innerHTML = renderTree(tree) || '<p class="text-gray-500 text-center py-4">No folders yet</p>';
-            
-            // Update selects
-            updateFolderSelects(foldersSnap);
         }
 
         function toggleFolder(id) {
             const children = document.getElementById(`children-${id}`);
+            const icon = document.getElementById(`icon-${id}`);
             if (children) {
                 children.classList.toggle('hidden');
+                if (icon) {
+                    icon.style.transform = children.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
+                }
             }
         }
 
@@ -718,8 +929,11 @@
             const selects = ['folderParent', 'quizFolder'];
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
+                if (!select) return;
+                
                 const currentValue = select.value;
-                select.innerHTML = selectId === 'folderParent' ? '<option value="">Root Level</option>' : '<option value="">Select Folder</option>';
+                const defaultOption = selectId === 'folderParent' ? '<option value="">Root Level</option>' : '<option value="">Select Folder</option>';
+                select.innerHTML = defaultOption;
                 
                 snapshot.forEach(doc => {
                     const folder = doc.data();
@@ -732,12 +946,17 @@
 
         function setBulkMode(enable) {
             bulkMode = enable;
-            selectedItems.clear();
+            if (!enable) selectedItems.clear();
             
-            document.getElementById('bulkModeBtn').classList.toggle('hidden', enable);
-            document.getElementById('bulkDeleteBtn').classList.toggle('hidden', !enable);
-            document.getElementById('cancelBulkBtn').classList.toggle('hidden', !enable);
+            const bulkBtn = document.getElementById('bulkModeBtn');
+            const deleteBtn = document.getElementById('bulkDeleteBtn');
+            const cancelBtn = document.getElementById('cancelBulkBtn');
             
+            if (bulkBtn) bulkBtn.classList.toggle('hidden', enable);
+            if (deleteBtn) deleteBtn.classList.toggle('hidden', !enable);
+            if (cancelBtn) cancelBtn.classList.toggle('hidden', !enable);
+            
+            updateSelectedCount();
             loadFolderTree();
         }
 
@@ -747,483 +966,374 @@
             } else {
                 selectedItems.add(id);
             }
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const countEl = document.getElementById('selectedCount');
+            if (countEl) countEl.textContent = selectedItems.size;
         }
 
         async function deleteSelected() {
+            if (selectedItems.size === 0) return;
             if (!confirm(`Delete ${selectedItems.size} selected items?`)) return;
             
-            for (const id of selectedItems) {
-                await db.collection('folders').doc(id).delete();
+            try {
+                for (const id of selectedItems) {
+                    await db.collection('folders').doc(id).delete();
+                }
+                selectedItems.clear();
+                setBulkMode(false);
+                loadFolderTree();
+                showNotification('Items deleted successfully', 'success');
+            } catch (error) {
+                showNotification('Error deleting items', 'error');
             }
-            
-            selectedItems.clear();
-            setBulkMode(false);
-            loadFolderTree();
         }
 
+        // ==================== MODALS ====================
+
         function openAddFolderModal() {
+            document.getElementById('folderName').value = '';
+            document.getElementById('folderDesc').value = '';
+            document.getElementById('folderParent').value = '';
             document.getElementById('folderModal').classList.remove('hidden');
         }
 
         function openAddQuizModal() {
             questionCount = 0;
             document.getElementById('questionsContainer').innerHTML = '';
+            document.getElementById('quizTitle').value = '';
+            document.getElementById('quizFolder').value = '';
             addQuestionField();
             document.getElementById('quizModal').classList.remove('hidden');
         }
 
         function openUploadModal() {
-            document.getElementById('tab-files').classList.remove('hidden');
             switchAdminTab('files');
         }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // ==================== QUIZ MANAGEMENT ====================
 
         function addQuestionField() {
             questionCount++;
             const container = document.getElementById('questionsContainer');
             const div = document.createElement('div');
-            div.className = 'question-preview p-4 bg-gray-50 dark:bg-gray-800 rounded-lg';
+            div.className = 'question-preview p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700';
             div.innerHTML = `
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-bold">Question ${questionCount}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="font-bold text-indigo-600">Question ${questionCount}</span>
+                    <button onclick="this.closest('.question-preview').remove()" class="text-red-500 hover:text-red-700 p-1">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <textarea class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 mb-2" placeholder="Question text" rows="2"></textarea>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                    <input type="text" class="option-input w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Option A">
-                    <input type="text" class="option-input w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Option B">
-                    <input type="text" class="option-input w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Option C">
-                    <input type="text" class="option-input w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Option D">
+                <textarea class="question-text w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 mb-3" placeholder="Enter question text..." rows="2"></textarea>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-bold">A</span>
+                        <input type="text" class="option-input flex-1 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Option A">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-bold">B</span>
+                        <input type="text" class="option-input flex-1 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Option B">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-bold">C</span>
+                        <input type="text" class="option-input flex-1 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Option C">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-bold">D</span>
+                        <input type="text" class="option-input flex-1 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Option D">
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <select class="correct-answer px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-                        <option value="0">A is correct</option>
-                        <option value="1">B is correct</option>
-                        <option value="2">C is correct</option>
-                        <option value="3">D is correct</option>
+                <div class="flex gap-3">
+                    <select class="correct-answer px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+                        <option value="0">Correct: A</option>
+                        <option value="1">Correct: B</option>
+                        <option value="2">Correct: C</option>
+                        <option value="3">Correct: D</option>
                     </select>
-                    <input type="text" class="explanation flex-1 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Explanation (optional)">
+                    <input type="text" class="explanation flex-1 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm" placeholder="Explanation (optional)">
                 </div>
             `;
             container.appendChild(div);
         }
 
         function previewQuiz() {
-            const title = document.getElementById('quizTitle').value;
+            const title = document.getElementById('quizTitle').value || 'Untitled Quiz';
             const questions = [];
             
             document.querySelectorAll('.question-preview').forEach(q => {
-                const text = q.querySelector('textarea').value;
-                const options = Array.from(q.querySelectorAll('.option-input')).map(i => i.value);
-                const correct = parseInt(q.querySelector('.correct-answer').value);
+                const text = q.querySelector('.question-text').value;
+                const options = Array.from(q.querySelectorAll('.option-input')).map(i => i.value).filter(v => v);
+                const correctAnswer = parseInt(q.querySelector('.correct-answer').value);
                 const explanation = q.querySelector('.explanation').value;
                 
-                if (text && options.every(o => o)) {
-                    questions.push({ text, options, correct, explanation });
+                if (text && options.length >= 2) {
+                    questions.push({ text, options, correctAnswer, explanation });
                 }
             });
             
-            let html = `<h4 class="font-bold text-lg mb-4">${title || 'Untitled Quiz'}</h4>`;
+            let html = `<div class="mb-4 pb-4 border-b dark:border-gray-700"><h4 class="font-bold text-xl text-indigo-600">${title}</h4><p class="text-gray-600">${questions.length} questions</p></div>`;
+            
             questions.forEach((q, idx) => {
                 html += `
-                    <div class="mb-4 p-4 border rounded-lg">
-                        <p class="font-medium mb-2">${idx + 1}. ${q.text}</p>
-                        <div class="space-y-1 ml-4">
+                    <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <p class="font-medium mb-3 text-lg">${idx + 1}. ${q.text}</p>
+                        <div class="space-y-2 ml-4">
                             ${q.options.map((opt, i) => `
-                                <div class="${i === q.correct ? 'text-green-600 font-bold' : ''}">
-                                    ${String.fromCharCode(65 + i)}. ${opt} ${i === q.correct ? '(Correct)' : ''}
+                                <div class="flex items-center gap-2 p-2 rounded ${i === q.correctAnswer ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 font-semibold' : 'bg-white dark:bg-gray-700'}">
+                                    <span class="w-6 h-6 rounded-full ${i === q.correctAnswer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-600'} flex items-center justify-center text-xs">
+                                        ${String.fromCharCode(65 + i)}
+                                    </span>
+                                    ${opt} ${i === q.correctAnswer ? '<i class="fas fa-check text-green-600 ml-auto"></i>' : ''}
                                 </div>
                             `).join('')}
                         </div>
-                        ${q.explanation ? `<p class="mt-2 text-sm text-blue-600"><i class="fas fa-info-circle mr-1"></i>${q.explanation}</p>` : ''}
+                        ${q.explanation ? `<div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded text-sm text-blue-800 dark:text-blue-200"><i class="fas fa-info-circle mr-2"></i>${q.explanation}</div>` : ''}
                     </div>
                 `;
             });
             
-            document.getElementById('previewContent').innerHTML = html;
+            document.getElementById('previewContent').innerHTML = html || '<p class="text-gray-500 text-center">No valid questions to preview</p>';
             document.getElementById('previewModal').classList.remove('hidden');
         }
 
         async function saveQuiz() {
-            const title = document.getElementById('quizTitle').value;
+            const title = document.getElementById('quizTitle').value.trim();
             const folderId = document.getElementById('quizFolder').value;
             const duration = parseInt(document.getElementById('quizDuration').value) || 30;
             const passingScore = parseInt(document.getElementById('quizPassing').value) || 60;
             
-            if (!title || !folderId) {
-                alert('Please fill in title and select folder');
+            if (!title) {
+                alert('Please enter quiz title');
+                return;
+            }
+            if (!folderId) {
+                alert('Please select a folder');
                 return;
             }
             
             const questions = [];
             document.querySelectorAll('.question-preview').forEach(q => {
-                const text = q.querySelector('textarea').value;
-                const options = Array.from(q.querySelectorAll('.option-input')).map(i => i.value);
+                const text = q.querySelector('.question-text').value.trim();
+                const options = Array.from(q.querySelectorAll('.option-input')).map(i => i.value.trim()).filter(v => v);
                 const correctAnswer = parseInt(q.querySelector('.correct-answer').value);
-                const explanation = q.querySelector('.explanation').value;
+                const explanation = q.querySelector('.explanation').value.trim();
                 
-                if (text && options.every(o => o)) {
+                if (text && options.length >= 2) {
                     questions.push({ text, options, correctAnswer, explanation });
                 }
             });
             
             if (questions.length === 0) {
-                alert('Please add at least one question');
+                alert('Please add at least one valid question with 2+ options');
                 return;
             }
             
-            const quizRef = await db.collection('quizzes').add({
-                title,
-                folderId,
-                duration,
-                passingScore,
-                questionCount: questions.length,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                shuffle: document.getElementById('quizShuffle').value === 'true'
-            });
-            
-            // Add questions as subcollection
-            const batch = db.batch();
-            questions.forEach((q, idx) => {
-                const qRef = db.collection('quizzes').doc(quizRef.id).collection('questions').doc();
-                batch.set(qRef, q);
-            });
-            await batch.commit();
-            
-            closeModal('quizModal');
-            alert('Quiz saved successfully!');
-            loadQuizzes();
-        }
-
-        async function loadQuizzes() {
-            const snapshot = await db.collection('quizzes').get();
-            const tbody = document.getElementById('quizzesTable');
-            
-            let html = '';
-            for (const doc of snapshot.docs) {
-                const quiz = doc.data();
-                const folderDoc = quiz.folderId ? await db.collection('folders').doc(quiz.folderId).get() : null;
-                const folderName = folderDoc && folderDoc.exists ? folderDoc.data().name : 'Unknown';
-                
-                html += `
-                    <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                        <td class="py-3 px-4">${quiz.title}</td>
-                        <td class="py-3 px-4">${folderName}</td>
-                        <td class="py-3 px-4">${quiz.questionCount}</td>
-                        <td class="py-3 px-4">${quiz.duration} min</td>
-                        <td class="py-3 px-4">
-                            <button onclick="editQuiz('${doc.id}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                            <button onclick="deleteQuiz('${doc.id}')" class="text-red-500 hover:text-red-700 mr-2"><i class="fas fa-trash"></i></button>
-                            <button onclick="exportQuiz('${doc.id}')" class="text-green-500 hover:text-green-700"><i class="fas fa-download"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }
-            
-            tbody.innerHTML = html || '<tr><td colspan="5" class="text-center py-4 text-gray-500">No quizzes found</td></tr>';
-        }
-
-        async function loadStudents() {
-            const snapshot = await db.collection('students').get();
-            const tbody = document.getElementById('studentsTable');
-            
-            let html = '';
-            for (const doc of snapshot.docs) {
-                const student = doc.data();
-                const historySnap = await db.collection('students').doc(doc.id).collection('history').get();
-                
-                let totalScore = 0;
-                historySnap.forEach(h => totalScore += h.data().score);
-                const avgScore = historySnap.size > 0 ? Math.round(totalScore / historySnap.size) : 0;
-                
-                html += `
-                    <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                        <td class="py-3 px-4 font-medium">${student.username}</td>
-                        <td class="py-3 px-4">${student.createdAt ? new Date(student.createdAt.toDate()).toLocaleDateString() : 'N/A'}</td>
-                        <td class="py-3 px-4">${historySnap.size}</td>
-                        <td class="py-3 px-4">
-                            <span class="px-2 py-1 rounded ${avgScore >= 80 ? 'bg-green-100 text-green-800' : avgScore >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
-                                ${avgScore}%
-                            </span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <button onclick="viewStudent('${doc.id}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-eye"></i></button>
-                            <button onclick="deleteStudent('${doc.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }
-            
-            tbody.innerHTML = html || '<tr><td colspan="5" class="text-center py-4 text-gray-500">No students found</td></tr>';
-        }
-
-        // File Management
-        function handleDragOver(e) {
-            e.preventDefault();
-            document.getElementById('dropZone').classList.add('dragover');
-        }
-
-        function handleDragLeave(e) {
-            e.preventDefault();
-            document.getElementById('dropZone').classList.remove('dragover');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            document.getElementById('dropZone').classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            uploadFiles(files);
-        }
-
-        function handleFileSelect(e) {
-            uploadFiles(e.target.files);
-        }
-
-        async function uploadFiles(files) {
-            const progressDiv = document.getElementById('uploadProgress');
-            const progressBar = document.getElementById('uploadBar');
-            const progressText = document.getElementById('uploadPercent');
-            
-            progressDiv.classList.remove('hidden');
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const storageRef = storage.ref(`files/${Date.now()}_${file.name}`);
-                
-                const uploadTask = storageRef.put(file);
-                
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        progressBar.style.width = `${progress}%`;
-                        progressText.textContent = `${Math.round(progress)}%`;
-                    },
-                    (error) => {
-                        console.error('Upload error:', error);
-                    },
-                    async () => {
-                        const url = await uploadTask.snapshot.ref.getDownloadURL();
-                        await db.collection('files').add({
-                            name: file.name,
-                            type: file.type,
-                            size: formatFileSize(file.size),
-                            url: url,
-                            uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        
-                        if (i === files.length - 1) {
-                            setTimeout(() => {
-                                progressDiv.classList.add('hidden');
-                                loadFiles();
-                            }, 1000);
-                        }
-                    }
-                );
-            }
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        async function loadFiles() {
-            const snapshot = await db.collection('files').orderBy('uploadedAt', 'desc').get();
-            const container = document.getElementById('filesList');
-            
-            let html = '';
-            snapshot.forEach(doc => {
-                const file = doc.data();
-                const icon = file.type.includes('pdf') ? 'fa-file-pdf text-red-500' : 
-                            file.type.includes('word') ? 'fa-file-word text-blue-500' :
-                            file.type.includes('powerpoint') ? 'fa-file-powerpoint text-orange-500' :
-                            file.type.includes('image') ? 'fa-file-image text-purple-500' : 'fa-file text-gray-500';
-                
-                html += `
-                    <div class="glass-card p-4 flex items-center gap-4">
-                        <i class="fas ${icon} text-3xl"></i>
-                        <div class="flex-1 min-w-0">
-                            <p class="font-medium truncate">${file.name}</p>
-                            <p class="text-sm text-gray-500">${file.size} • ${new Date(file.uploadedAt.toDate()).toLocaleDateString()}</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <a href="${file.url}" target="_blank" class="p-2 text-blue-500 hover:bg-blue-100 rounded"><i class="fas fa-eye"></i></a>
-                            <a href="${file.url}" download class="p-2 text-green-500 hover:bg-green-100 rounded"><i class="fas fa-download"></i></a>
-                            <button onclick="deleteFile('${doc.id}')" class="p-2 text-red-500 hover:bg-red-100 rounded"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html || '<p class="text-gray-500 text-center col-span-3">No files uploaded</p>';
-        }
-
-        // Notifications
-        document.getElementById('notifTarget').addEventListener('change', function() {
-            document.getElementById('specificStudentDiv').classList.toggle('hidden', this.value !== 'specific');
-        });
-
-        async function sendNotification() {
-            const target = document.getElementById('notifTarget').value;
-            const title = document.getElementById('notifTitle').value;
-            const message = document.getElementById('notifMessage').value;
-            const student = document.getElementById('notifStudent').value;
-            
-            if (!title || !message) {
-                alert('Please fill in title and message');
-                return;
-            }
-            
-            await db.collection('notifications').add({
-                title,
-                message,
-                recipient: target === 'all' ? 'all' : student,
-                read: false,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            alert('Notification sent!');
-            document.getElementById('notifTitle').value = '';
-            document.getElementById('notifMessage').value = '';
-            loadNotifHistory();
-        }
-
-        async function loadNotifHistory() {
-            const snapshot = await db.collection('notifications').orderBy('timestamp', 'desc').limit(20).get();
-            const container = document.getElementById('notifHistory');
-            
-            let html = '';
-            snapshot.forEach(doc => {
-                const notif = doc.data();
-                html += `
-                    <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-bold">${notif.title}</p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">${notif.message}</p>
-                                <p class="text-xs text-gray-500 mt-1">To: ${notif.recipient}</p>
-                            </div>
-                            <span class="text-xs text-gray-500">${new Date(notif.timestamp.toDate()).toLocaleDateString()}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html || '<p class="text-gray-500 text-center">No notifications sent</p>';
-        }
-
-        // Export/Import
-        async function exportQuiz(quizId) {
-            const quizDoc = await db.collection('quizzes').doc(quizId).get();
-            const questionsSnap = await db.collection('quizzes').doc(quizId).collection('questions').get();
-            
-            const exportData = {
-                quiz: quizDoc.data(),
-                questions: []
-            };
-            
-            questionsSnap.forEach(q => exportData.questions.push(q.data()));
-            
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${exportData.quiz.title.replace(/\s+/g, '_')}.json`;
-            a.click();
-        }
-
-        function importQuiz() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                const text = await file.text();
-                const data = JSON.parse(text);
-                
+            try {
                 // Create quiz
                 const quizRef = await db.collection('quizzes').add({
-                    ...data.quiz,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    title,
+                    folderId,
+                    duration,
+                    passingScore,
+                    questionCount: questions.length,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    shuffle: document.getElementById('quizShuffle').value === 'true'
                 });
                 
-                // Add questions
+                // Add questions in batch
                 const batch = db.batch();
-                data.questions.forEach(q => {
+                questions.forEach(q => {
                     const qRef = db.collection('quizzes').doc(quizRef.id).collection('questions').doc();
                     batch.set(qRef, q);
                 });
                 await batch.commit();
                 
-                alert('Quiz imported successfully!');
+                closeModal('quizModal');
+                showNotification('Quiz saved successfully!', 'success');
                 loadQuizzes();
-            };
-            input.click();
-        }
-
-        // Utilities
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-        }
-
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-        }
-
-        async function saveFolder() {
-            const name = document.getElementById('folderName').value;
-            const desc = document.getElementById('folderDesc').value;
-            const parentId = document.getElementById('folderParent').value || null;
-            
-            if (!name) {
-                alert('Please enter folder name');
-                return;
+                
+            } catch (error) {
+                console.error('Error saving quiz:', error);
+                alert('Error saving quiz: ' + error.message);
             }
-            
-            await db.collection('folders').add({
-                name,
-                description: desc,
-                parentId,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            closeModal('folderModal');
-            document.getElementById('folderName').value = '';
-            document.getElementById('folderDesc').value = '';
-            loadFolderTree();
         }
 
-        async function deleteFolder(id) {
-            if (!confirm('Delete this folder?')) return;
-            await db.collection('folders').doc(id).delete();
-            loadFolderTree();
-        }
-
-        async function deleteQuiz(id) {
-            if (!confirm('Delete this quiz?')) return;
+        async function loadQuizzes() {
+            const tbody = document.getElementById('quizzesTable');
+            if (!tbody) return;
             
-            // Delete questions subcollection
-            const questionsSnap = await db.collection('quizzes').doc(id).collection('questions').get();
-            const batch = db.batch();
-            questionsSnap.forEach(q => batch.delete(q.ref));
-            await batch.commit();
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr>';
             
-            await db.collection('quizzes').doc(id).delete();
-            loadQuizzes();
+            try {
+                const snapshot = await db.collection('quizzes').orderBy('createdAt', 'desc').get();
+                
+                let html = '';
+                for (const doc of snapshot.docs) {
+                    const quiz = doc.data();
+                    let folderName = 'Unknown';
+                    
+                    if (quiz.folderId && allFolders[quiz.folderId]) {
+                        folderName = allFolders[quiz.folderId].name;
+                    } else if (quiz.folderId) {
+                        try {
+                            const folderDoc = await db.collection('folders').doc(quiz.folderId).get();
+                            if (folderDoc.exists) folderName = folderDoc.data().name;
+                        } catch (e) {}
+                    }
+                    
+                    html += `
+                        <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                            <td class="py-3 px-4 font-medium">${quiz.title}</td>
+                            <td class="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">${folderName}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full text-xs">${quiz.questionCount}</span></td>
+                            <td class="py-3 px-4 text-sm">${quiz.duration} min</td>
+                            <td class="py-3 px-4">
+                                <button onclick="editQuiz('${doc.id}')" class="text-blue-500 hover:text-blue-700 mr-3 p-1" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteQuiz('${doc.id}')" class="text-red-500 hover:text-red-700 mr-3 p-1" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button onclick="exportQuiz('${doc.id}')" class="text-green-500 hover:text-green-700 p-1" title="Export">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                tbody.innerHTML = html || '<tr><td colspan="5" class="text-center py-8 text-gray-500">No quizzes found</td></tr>';
+                
+            } catch (error) {
+                console.error('Error loading quizzes:', error);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-500">Error loading quizzes</td></tr>';
+            }
         }
 
-        async function deleteFile(id) {
-            if (!confirm('Delete this file?')) return;
-            await db.collection('files').doc(id).delete();
-            loadFiles();
+        // ==================== STUDENTS ====================
+
+        async function loadStudents() {
+            const tbody = document.getElementById('studentsTable');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr>';
+            
+            try {
+                const snapshot = await db.collection('students').orderBy('createdAt', 'desc').get();
+                
+                let html = '';
+                for (const doc of snapshot.docs) {
+                    const student = doc.data();
+                    
+                    // Get student's quiz history
+                    const historySnap = await db.collection('students').doc(doc.id).collection('history').get();
+                    let totalScore = 0;
+                    historySnap.forEach(h => totalScore += h.data().score);
+                    const avgScore = historySnap.size > 0 ? Math.round(totalScore / historySnap.size) : 0;
+                    
+                    const scoreColor = avgScore >= 80 ? 'bg-green-100 text-green-800' : 
+                                      avgScore >= 60 ? 'bg-yellow-100 text-yellow-800' : 
+                                      'bg-red-100 text-red-800';
+                    
+                    html += `
+                        <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                            <td class="py-3 px-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                                        <i class="fas fa-user text-indigo-600 text-sm"></i>
+                                    </div>
+                                    <span class="font-medium">${student.username}</span>
+                                </div>
+                            </td>
+                            <td class="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                                ${student.createdAt ? new Date(student.createdAt.toDate()).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td class="py-3 px-4 text-sm">${historySnap.size}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold ${scoreColor}">
+                                    ${avgScore}%
+                                </span>
+                            </td>
+                            <td class="py-3 px-4">
+                                <button onclick="viewStudent('${doc.id}')" class="text-blue-500 hover:text-blue-700 mr-3 p-1" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="deleteStudent('${doc.id}')" class="text-red-500 hover:text-red-700 p-1" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                tbody.innerHTML = html || '<tr><td colspan="5" class="text-center py-8 text-gray-500">No students found</td></tr>';
+                
+            } catch (error) {
+                console.error('Error loading students:', error);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-500">Error loading students</td></tr>';
+            }
         }
 
-        async function deleteStudent(id) {
-            if (!confirm('Delete this student and all their data?')) return;
-            await db.collection('students').doc(id).delete();
-            loadStudents();
+        async function viewStudent(studentId) {
+            try {
+                const studentDoc = await db.collection('students').doc(studentId).get();
+                if (!studentDoc.exists) return;
+                
+                const student = studentDoc.data();
+                const historySnap = await db.collection('students').doc(studentId).collection('history').orderBy('completedAt', 'desc').get();
+                
+                let historyHtml = '';
+                if (historySnap.empty) {
+                    historyHtml = '<p class="text-gray-500 text-center py-4">No quiz history</p>';
+                } else {
+                    historyHtml = '<div class="space-y-2 max-h-64 overflow-y-auto">';
+                    historySnap.forEach(doc => {
+                        const h = doc.data();
+                        const date = h.completedAt ? new Date(h.completedAt.toDate()).toLocaleString() : 'Unknown';
+                        historyHtml += `
+                            <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded flex justify-between items-center">
+                                <div>
+                                    <p class="font-medium">${h.quizTitle}</p>
+                                    <p class="text-xs text-gray-500">${date}</p>
+                                </div>
+                                <span class="px-2 py-1 rounded text-sm font-bold ${h.score >= 80 ? 'bg-green-100 text-green-800' : h.score >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
+                                    ${h.score}%
+                                </span>
+                            </div>
+                        `;
+                    });
+                    historyHtml += '</div>';
+                }
+                
+                const content = document.getElementById('studentDetailContent');
+                content.innerHTML = `
+                    <div class="flex items-center gap-4 mb-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                        <div class="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                            <i class="fas fa-user text-3xl text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold">${student.username}</h4>
+                            <p class="text-gray-600 dark:text-gray-400">Joined: ${student.createdAt ? new Date(student.createdAt.toDate()).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                    </div>
+                    
+                    <h5 class="font-bold mb-3">Quiz History (${historySnap.size})</h5>
+                    ${historyHtml}
+                `;
+                
+                document.getElementById('studentModal').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error viewing student:', error);
+            }
         }
 
         function searchStudents() {
@@ -1236,32 +1346,586 @@
             });
         }
 
-        function loadAnalytics() {
-            // Placeholder for charts - in real implementation, use Chart.js
-            document.getElementById('detailedAnalytics').innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                        <p class="text-sm text-gray-600">Average Quiz Score</p>
-                        <p class="text-2xl font-bold text-indigo-600">72%</p>
-                    </div>
-                    <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <p class="text-sm text-gray-600">Completion Rate</p>
-                        <p class="text-2xl font-bold text-green-600">85%</p>
-                    </div>
-                    <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                        <p class="text-sm text-gray-600">Most Active Day</p>
-                        <p class="text-2xl font-bold text-orange-600">Monday</p>
-                    </div>
-                </div>
+        // ==================== FILES ====================
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropZone').classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropZone').classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropZone').classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) uploadFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) uploadFiles(e.target.files);
+        }
+
+        async function uploadFiles(files) {
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('uploadBar');
+            const progressText = document.getElementById('uploadPercent');
+            const statusText = document.getElementById('uploadStatus');
+            
+            progressDiv.classList.remove('hidden');
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                statusText.textContent = `Uploading ${i + 1} of ${files.length}: ${file.name}`;
+                
+                try {
+                    const storageRef = storage.ref(`files/${Date.now()}_${file.name}`);
+                    const uploadTask = storageRef.put(file);
+                    
+                    await new Promise((resolve, reject) => {
+                        uploadTask.on('state_changed', 
+                            (snapshot) => {
+                                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                progressBar.style.width = `${progress}%`;
+                                progressText.textContent = `${Math.round(progress)}%`;
+                            },
+                            (error) => reject(error),
+                            () => resolve()
+                        );
+                    });
+                    
+                    const url = await uploadTask.snapshot.ref.getDownloadURL();
+                    await db.collection('files').add({
+                        name: file.name,
+                        type: file.type,
+                        size: formatFileSize(file.size),
+                        url: url,
+                        uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    showNotification(`Failed to upload ${file.name}`, 'error');
+                }
+            }
+            
+            setTimeout(() => {
+                progressDiv.classList.add('hidden');
+                progressBar.style.width = '0%';
+                showNotification('Upload complete!', 'success');
+                loadFiles();
+            }, 1000);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function loadFiles() {
+            const container = document.getElementById('filesList');
+            if (!container) return;
+            
+            container.innerHTML = '<div class="col-span-full text-center py-8"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
+            
+            try {
+                const snapshot = await db.collection('files').orderBy('uploadedAt', 'desc').get();
+                
+                let html = '';
+                snapshot.forEach(doc => {
+                    const file = doc.data();
+                    const icon = file.type.includes('pdf') ? 'fa-file-pdf text-red-500' : 
+                                file.type.includes('word') || file.type.includes('document') ? 'fa-file-word text-blue-500' :
+                                file.type.includes('powerpoint') || file.type.includes('presentation') ? 'fa-file-powerpoint text-orange-500' :
+                                file.type.includes('image') ? 'fa-file-image text-purple-500' : 'fa-file text-gray-500';
+                    
+                    html += `
+                        <div class="glass-card p-4 flex items-center gap-4 hover:shadow-lg transition">
+                            <i class="fas ${icon} text-3xl flex-shrink-0"></i>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium truncate" title="${file.name}">${file.name}</p>
+                                <p class="text-xs text-gray-500">${file.size} • ${file.uploadedAt ? new Date(file.uploadedAt.toDate()).toLocaleDateString() : 'Unknown'}</p>
+                            </div>
+                            <div class="flex gap-1">
+                                <a href="${file.url}" target="_blank" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="${file.url}" download class="p-2 text-green-500 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button onclick="deleteFile('${doc.id}')" class="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html || '<div class="col-span-full text-center py-8 text-gray-500">No files uploaded yet</div>';
+                
+            } catch (error) {
+                console.error('Error loading files:', error);
+                container.innerHTML = '<div class="col-span-full text-center py-8 text-red-500">Error loading files</div>';
+            }
+        }
+
+        // ==================== NOTIFICATIONS ====================
+
+        function toggleNotifTarget() {
+            const target = document.getElementById('notifTarget').value;
+            const specificDiv = document.getElementById('specificStudentDiv');
+            if (specificDiv) {
+                specificDiv.classList.toggle('hidden', target !== 'specific');
+            }
+        }
+
+        async function sendNotification() {
+            const target = document.getElementById('notifTarget').value;
+            const title = document.getElementById('notifTitle').value.trim();
+            const message = document.getElementById('notifMessage').value.trim();
+            const student = document.getElementById('notifStudent').value.trim();
+            
+            if (!title || !message) {
+                alert('Please fill in title and message');
+                return;
+            }
+            
+            if (target === 'specific' && !student) {
+                alert('Please enter student username');
+                return;
+            }
+            
+            try {
+                await db.collection('notifications').add({
+                    title,
+                    message,
+                    recipient: target === 'all' ? 'all' : student,
+                    read: false,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showNotification('Notification sent successfully!', 'success');
+                document.getElementById('notifTitle').value = '';
+                document.getElementById('notifMessage').value = '';
+                document.getElementById('notifStudent').value = '';
+                loadNotifHistory();
+                
+            } catch (error) {
+                console.error('Error sending notification:', error);
+                alert('Error sending notification');
+            }
+        }
+
+        async function loadNotifHistory() {
+            const container = document.getElementById('notifHistory');
+            if (!container) return;
+            
+            try {
+                const snapshot = await db.collection('notifications').orderBy('timestamp', 'desc').limit(20).get();
+                
+                let html = '';
+                snapshot.forEach(doc => {
+                    const notif = doc.data();
+                    const date = notif.timestamp ? new Date(notif.timestamp.toDate()).toLocaleString() : 'Unknown';
+                    html += `
+                        <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border-l-4 ${notif.recipient === 'all' ? 'border-indigo-500' : 'border-green-500'}">
+                            <div class="flex justify-between items-start mb-1">
+                                <h5 class="font-bold text-sm">${notif.title}</h5>
+                                <span class="text-xs text-gray-500">${date}</span>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">${notif.message}</p>
+                            <span class="text-xs px-2 py-1 rounded ${notif.recipient === 'all' ? 'bg-indigo-100 text-indigo-800' : 'bg-green-100 text-green-800'}">
+                                To: ${notif.recipient}
+                            </span>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html || '<p class="text-gray-500 text-center py-4">No notifications sent yet</p>';
+                
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        // ==================== EXPORT/IMPORT ====================
+
+        async function exportQuiz(quizId) {
+            try {
+                const quizDoc = await db.collection('quizzes').doc(quizId).get();
+                const questionsSnap = await db.collection('quizzes').doc(quizId).collection('questions').get();
+                
+                const exportData = {
+                    quiz: quizDoc.data(),
+                    questions: []
+                };
+                
+                questionsSnap.forEach(q => exportData.questions.push(q.data()));
+                
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${exportData.quiz.title.replace(/\s+/g, '_')}_quiz.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('Error exporting quiz');
+            }
+        }
+
+        async function exportAllQuizzes() {
+            try {
+                const snapshot = await db.collection('quizzes').get();
+                const allData = [];
+                
+                for (const doc of snapshot.docs) {
+                    const questionsSnap = await db.collection('quizzes').doc(doc.id).collection('questions').get();
+                    const questions = [];
+                    questionsSnap.forEach(q => questions.push(q.data()));
+                    
+                    allData.push({
+                        quiz: { id: doc.id, ...doc.data() },
+                        questions: questions
+                    });
+                }
+                
+                const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `all_quizzes_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+            } catch (error) {
+                console.error('Export all error:', error);
+                alert('Error exporting quizzes');
+            }
+        }
+
+        function importQuiz() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    
+                    // Handle both single quiz and array of quizzes
+                    const quizzes = Array.isArray(data) ? data : [data];
+                    
+                    for (const item of quizzes) {
+                        // Create quiz
+                        const quizRef = await db.collection('quizzes').add({
+                            ...item.quiz,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        // Add questions
+                        if (item.questions && item.questions.length > 0) {
+                            const batch = db.batch();
+                            item.questions.forEach(q => {
+                                const qRef = db.collection('quizzes').doc(quizRef.id).collection('questions').doc();
+                                batch.set(qRef, q);
+                            });
+                            await batch.commit();
+                        }
+                    }
+                    
+                    showNotification(`Imported ${quizzes.length} quiz(es) successfully!`, 'success');
+                    loadQuizzes();
+                    
+                } catch (error) {
+                    console.error('Import error:', error);
+                    alert('Error importing quiz. Make sure the file is valid JSON.');
+                }
+            };
+            input.click();
+        }
+
+        // ==================== ANALYTICS ====================
+
+        async function loadAnalytics() {
+            try {
+                // Get all quiz results
+                const studentsSnap = await db.collection('students').get();
+                let totalScore = 0;
+                let totalQuizzes = 0;
+                const studentScores = [];
+                
+                for (const doc of studentsSnap.docs) {
+                    const historySnap = await db.collection('students').doc(doc.id).collection('history').get();
+                    let studentTotal = 0;
+                    
+                    historySnap.forEach(h => {
+                        const score = h.data().score;
+                        totalScore += score;
+                        studentTotal += score;
+                        totalQuizzes++;
+                    });
+                    
+                    if (historySnap.size > 0) {
+                        studentScores.push({
+                            username: doc.data().username,
+                            avgScore: Math.round(studentTotal / historySnap.size),
+                            quizzes: historySnap.size
+                        });
+                    }
+                }
+                
+                // Update stats
+                const avgScore = totalQuizzes > 0 ? Math.round(totalScore / totalQuizzes) : 0;
+                
+                const quizStats = document.getElementById('quizStats');
+                if (quizStats) {
+                    quizStats.innerHTML = `
+                        <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <span class="text-gray-600 dark:text-gray-400">Average Score</span>
+                            <span class="text-2xl font-bold text-indigo-600">${avgScore}%</span>
+                        </div>
+                        <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <span class="text-gray-600 dark:text-gray-400">Total Attempts</span>
+                            <span class="text-2xl font-bold text-green-600">${totalQuizzes}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <span class="text-gray-600 dark:text-gray-400">Active Students</span>
+                            <span class="text-2xl font-bold text-orange-600">${studentScores.length}</span>
+                        </div>
+                    `;
+                }
+                
+                // Top students
+                studentScores.sort((a, b) => b.avgScore - a.avgScore);
+                const topStudentsList = document.getElementById('topStudentsList');
+                if (topStudentsList) {
+                    let html = '';
+                    studentScores.slice(0, 5).forEach((s, idx) => {
+                        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '•';
+                        html += `
+                            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xl">${medal}</span>
+                                    <div>
+                                        <p class="font-medium">${s.username}</p>
+                                        <p class="text-xs text-gray-500">${s.quizzes} quizzes</p>
+                                    </div>
+                                </div>
+                                <span class="text-lg font-bold text-indigo-600">${s.avgScore}%</span>
+                            </div>
+                        `;
+                    });
+                    topStudentsList.innerHTML = html || '<p class="text-gray-500 text-center py-4">No data yet</p>';
+                }
+                
+            } catch (error) {
+                console.error('Analytics error:', error);
+            }
+        }
+
+        // ==================== CRUD OPERATIONS ====================
+
+        async function saveFolder() {
+            const name = document.getElementById('folderName').value.trim();
+            const desc = document.getElementById('folderDesc').value.trim();
+            const parentId = document.getElementById('folderParent').value || null;
+            
+            if (!name) {
+                alert('Please enter folder name');
+                return;
+            }
+            
+            try {
+                await db.collection('folders').add({
+                    name,
+                    description: desc,
+                    parentId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                closeModal('folderModal');
+                showNotification('Folder created successfully!', 'success');
+                loadFolderTree();
+                
+            } catch (error) {
+                console.error('Error saving folder:', error);
+                alert('Error creating folder');
+            }
+        }
+
+        async function editFolder(id) {
+            const folder = allFolders[id];
+            if (!folder) return;
+            
+            const newName = prompt('Edit folder name:', folder.name);
+            if (newName === null) return; // Cancelled
+            
+            if (newName.trim() === '') {
+                alert('Folder name cannot be empty');
+                return;
+            }
+            
+            try {
+                await db.collection('folders').doc(id).update({
+                    name: newName.trim()
+                });
+                showNotification('Folder updated!', 'success');
+                loadFolderTree();
+            } catch (error) {
+                alert('Error updating folder');
+            }
+        }
+
+        async function deleteFolder(id) {
+            // Check if folder has children
+            const hasChildren = Object.values(allFolders).some(f => f.parentId === id);
+            if (hasChildren) {
+                alert('Cannot delete folder that contains subfolders. Delete subfolders first.');
+                return;
+            }
+            
+            if (!confirm('Delete this folder?')) return;
+            
+            try {
+                await db.collection('folders').doc(id).delete();
+                showNotification('Folder deleted!', 'success');
+                loadFolderTree();
+            } catch (error) {
+                alert('Error deleting folder');
+            }
+        }
+
+        async function editQuiz(id) {
+            // Implementation for editing quiz
+            alert('Edit functionality coming soon. For now, delete and recreate the quiz.');
+        }
+
+        async function deleteQuiz(id) {
+            if (!confirm('Delete this quiz and all its questions?')) return;
+            
+            try {
+                // Delete questions first
+                const questionsSnap = await db.collection('quizzes').doc(id).collection('questions').get();
+                const batch = db.batch();
+                questionsSnap.forEach(q => batch.delete(q.ref));
+                await batch.commit();
+                
+                // Delete quiz
+                await db.collection('quizzes').doc(id).delete();
+                
+                showNotification('Quiz deleted!', 'success');
+                loadQuizzes();
+            } catch (error) {
+                alert('Error deleting quiz');
+            }
+        }
+
+        async function deleteFile(id) {
+            if (!confirm('Delete this file?')) return;
+            
+            try {
+                await db.collection('files').doc(id).delete();
+                showNotification('File deleted!', 'success');
+                loadFiles();
+            } catch (error) {
+                alert('Error deleting file');
+            }
+        }
+
+        async function deleteStudent(id) {
+            if (!confirm('Delete this student and all their data? This cannot be undone!')) return;
+            
+            try {
+                // Delete subcollections first
+                const historySnap = await db.collection('students').doc(id).collection('history').get();
+                const batch = db.batch();
+                historySnap.forEach(h => batch.delete(h.ref));
+                await batch.commit();
+                
+                // Delete student
+                await db.collection('students').doc(id).delete();
+                
+                showNotification('Student deleted!', 'success');
+                loadStudents();
+            } catch (error) {
+                alert('Error deleting student');
+            }
+        }
+
+        // ==================== UTILITIES ====================
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notif = document.createElement('div');
+            const colors = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            notif.className = `fixed top-4 right-4 ${colors} text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in flex items-center gap-2`;
+            notif.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                <span>${message}</span>
             `;
+            
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.style.opacity = '0';
+                notif.style.transform = 'translateY(-20px)';
+                setTimeout(() => notif.remove(), 300);
+            }, 3000);
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+
+        // Check saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
         }
 
         // Close modals on outside click
         window.onclick = function(event) {
-            if (event.target.classList.contains('fixed')) {
+            if (event.target.classList.contains('fixed') && event.target.id !== 'sidebarOverlay') {
                 event.target.classList.add('hidden');
             }
         }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // ESC to close modals
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.fixed').forEach(modal => {
+                    if (modal.id !== 'loginScreen' && modal.id !== 'adminDashboard' && modal.id !== 'sidebarOverlay') {
+                        modal.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Admin panel loaded');
+            console.log('Firebase initialized');
+        });
     </script>
 </body>
 </html>
