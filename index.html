@@ -48,6 +48,20 @@
         .progress-bar { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s; }
         .question-number { display: inline-block; width: 30px; height: 30px; border-radius: 50%; background: #e0e0e0; text-align: center; line-height: 30px; margin: 5px; cursor: pointer; }
         .question-number.answered { background: #4caf50; color: white; }
+        .question-number.flagged { 
+            background: #ff9800; 
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        .question-number.answered.flagged { 
+            background: #ff9800; 
+            color: white;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 152, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        }
         .question-nav { display: flex; flex-wrap: wrap; justify-content: center; margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 10px; }
     </style>
 <base target="_blank">
@@ -77,6 +91,10 @@
 
         <!-- Main App -->
         <div id="main-app" class="hidden">
+            <div id="notifications-bar" style="display: none; background: #ff9800; color: white; padding: 15px; text-align: center; border-radius: 10px; margin-bottom: 15px; position: relative;">
+                <span id="notification-text"></span>
+                <button onclick="closeNotification()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: white; font-size: 1.2em; cursor: pointer;">✕</button>
+            </div>
             <div class="header">
                 <h1>🩺 MedQuiz HNU</h1>
                 <p>Welcome, <span id="user-name"></span>!</p>
@@ -150,6 +168,7 @@
         let userAnswers = {};
         let correctCount = 0;
         let quizMistakes = [];
+        let flaggedQuestions = [];
         let timerInterval;
         let timeRemaining = 1800;
         let currentQuizId = null;
@@ -239,6 +258,7 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('user-name').textContent = currentUser.username;
+            loadUserNotifications();
             loadHome();
         }
 
@@ -489,9 +509,9 @@
                     if (doc.exists) {
                         const f = doc.data();
                         const icon = f.name.endsWith('.pdf') ? '📄' : f.name.endsWith('.ppt') ? '📊' : '📝';
-                        html += `<div class="file-card" style="background: #fff9c4;">
-                            <button class="favorite-btn" onclick="event.stopPropagation(); toggleFileFav('${fid}')">⭐</button>
-                            <div class="file-card-content" onclick="viewFile('${f.url}', '${f.name}')">
+                        html += `<div class="file-card" style="background: #fff9c4; position: relative;">
+                            <button class="favorite-btn" onclick="event.stopPropagation(); toggleFileFav('${fid}'); loadFavorites();" style="position: absolute; top: 10px; right: 10px; background: white; border: none; font-size: 1.5em; cursor: pointer; z-index: 100; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">⭐</button>
+                            <div class="file-card-content" onclick="viewFile('${f.url}', '${f.name}')" style="cursor: pointer; padding-top: 10px;">
                                 <div class="folder-icon">${icon}</div>
                                 <h4>${f.name}</h4>
                                 <p>${f.size ? (f.size/1024).toFixed(1) + ' KB' : 'Google Drive'}</p>
@@ -540,13 +560,13 @@
                         <h2 style="color: #667eea; margin-bottom: 20px;">📝 ${title}</h2>
                         <p style="margin-bottom: 30px; color: #666;">Choose exam mode:</p>
 
-                        <button onclick="console.log('Clicked untimed'); selectExamMode('untimed', ${quizId}, '${title}')" style="display: block; width: 100%; padding: 20px; margin: 10px 0; border: 2px solid #667eea; border-radius: 15px; background: white; cursor: pointer; font-size: 1.1em; transition: all 0.3s;">
+                        <button onclick="console.log('Clicked untimed'); selectExamMode('untimed', '${quizId}', '${title}')" style="display: block; width: 100%; padding: 20px; margin: 10px 0; border: 2px solid #667eea; border-radius: 15px; background: white; cursor: pointer; font-size: 1.1em; transition: all 0.3s;">
                             <div style="font-size: 2em; margin-bottom: 10px;">⏱️</div>
                             <strong>No Time Limit</strong>
                             <div style="color: #666; font-size: 0.9em;">Take your time</div>
                         </button>
 
-                        <button onclick="console.log('Clicked timed'); showTimeSelection(${quizId}, '${title}')" style="display: block; width: 100%; padding: 20px; margin: 10px 0; border: 2px solid #764ba2; border-radius: 15px; background: white; cursor: pointer; font-size: 1.1em; transition: all 0.3s;">
+                        <button onclick="console.log('Clicked timed'); showTimeSelection('${quizId}', '${title}')" style="display: block; width: 100%; padding: 20px; margin: 10px 0; border: 2px solid #764ba2; border-radius: 15px; background: white; cursor: pointer; font-size: 1.1em; transition: all 0.3s;">
                             <div style="font-size: 2em; margin-bottom: 10px;">⏰</div>
                             <strong>Timed Exam</strong>
                             <div style="color: #666; font-size: 0.9em;">Set your own time limit</div>
@@ -580,11 +600,11 @@
                             </select>
                         </div>
 
-                        <button onclick="selectExamMode('timed', ${quizId}, '${title}')" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 25px; font-size: 1.1em; cursor: pointer; margin-top: 10px;">
+                        <button onclick="selectExamMode('timed', '${quizId}', '${title}')" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 25px; font-size: 1.1em; cursor: pointer; margin-top: 10px;">
                             Start Exam
                         </button>
 
-                        <button onclick="document.getElementById('time-selection-modal').remove(); showExamModeSelection(${quizId}, '${title}')" style="width: 100%; padding: 15px; background: #eee; color: #333; border: none; border-radius: 25px; font-size: 1em; cursor: pointer; margin-top: 10px;">
+                        <button onclick="document.getElementById('time-selection-modal').remove(); showExamModeSelection('${quizId}', '${title}')" style="width: 100%; padding: 15px; background: #eee; color: #333; border: none; border-radius: 25px; font-size: 1em; cursor: pointer; margin-top: 10px;">
                             Back
                         </button>
                     </div>
@@ -628,6 +648,7 @@
                 userAnswers = {};
                 correctCount = 0;
                 quizMistakes = [];
+                flaggedQuestions = [];
 
                 if (examMode === 'timed') {
                     startTimer(examDuration * 60);
@@ -642,7 +663,14 @@
 
         function showQuestion(index) {
             const q = currentQuestions[index];
-            let html = `<div class="question-card"><h3>Q${index+1}: ${q.question}</h3>`;
+            const isFlagged = flaggedQuestions.includes(index);
+            let html = `<div class="question-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">Q${index+1}: ${q.question}</h3>
+                    <button onclick="toggleFlag(${index})" style="background: ${isFlagged ? '#ff9800' : '#e0e0e0'}; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.2em; transition: all 0.3s;" title="Flag for review">
+                        🚩
+                    </button>
+                </div>`;
             q.options.forEach((opt, i) => {
                 const answered = userAnswers[index] !== undefined;
                 const isCorrect = i === q.correctAnswer;
@@ -671,6 +699,28 @@
         }
 
         function jumpTo(index) { currentQuestionIndex = index; showQuestion(index); }
+
+        function toggleFlag(index) {
+            const idx = flaggedQuestions.indexOf(index);
+            if (idx > -1) {
+                flaggedQuestions.splice(idx, 1);
+            } else {
+                flaggedQuestions.push(index);
+            }
+            showQuestion(index);
+            updateQuestionNav();
+        }
+
+        function updateQuestionNav() {
+            let nav = '';
+            for (let i = 0; i < currentQuestions.length; i++) {
+                let cls = 'question-number';
+                if (userAnswers[i] !== undefined) cls += ' answered';
+                if (flaggedQuestions.includes(i)) cls += ' flagged';
+                nav += `<span class="${cls}" onclick="jumpTo(${i})" title="${flaggedQuestions.includes(i) ? '🚩 ' : ''}Q${i+1}">${i+1}</span>`;
+            }
+            document.getElementById('question-nav').innerHTML = nav;
+        }
         function nextQuestion() { if (currentQuestionIndex < currentQuestions.length - 1) { currentQuestionIndex++; showQuestion(currentQuestionIndex); } }
         function previousQuestion() { if (currentQuestionIndex > 0) { currentQuestionIndex--; showQuestion(currentQuestionIndex); } }
 
@@ -733,12 +783,54 @@
 
         function loadMistakes() {
             const history = currentUser.history || [];
-            let mistakes = [];
-            history.forEach(h => { if (h.mistakes) h.mistakes.forEach(m => mistakes.push(m)); });
-            if (mistakes.length === 0) { document.getElementById('mistakes-content').innerHTML = '<p>No mistakes!</p>'; return; }
+            if (history.length === 0) { 
+                document.getElementById('mistakes-content').innerHTML = '<p>No mistakes!</p>'; 
+                return; 
+            }
+
             let html = '';
-            mistakes.forEach((m, i) => { html += `<div class="mistake-review"><strong>Q${i+1}:</strong> ${m.question}<br>Your: ${m.yourAnswer}<br>Correct: ${m.correctAnswer}</div>`; });
-            document.getElementById('mistakes-content').innerHTML = html;
+            history.slice().reverse().forEach((h, idx) => {
+                if (h.mistakes && h.mistakes.length > 0) {
+                    const date = h.date.toDate ? h.date.toDate().toLocaleDateString() : new Date(h.date).toLocaleDateString();
+                    html += `<div style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">`;
+                    html += `<h3 style="color: #667eea; margin-bottom: 10px;">📝 ${h.quizName}</h3>`;
+                    html += `<p style="color: #666; margin-bottom: 15px;">📅 ${date} | Score: ${h.score}/${h.total} (${h.percent}%)</p>`;
+                    html += `<div style="border-top: 2px solid #eee; padding-top: 15px;">`;
+                    h.mistakes.forEach((m, i) => {
+                        html += `<div class="mistake-review" style="margin-bottom: 10px;"><strong>Q${i+1}:</strong> ${m.question}<br>Your: ${m.yourAnswer}<br>Correct: ${m.correctAnswer}</div>`;
+                    });
+                    html += `</div></div>`;
+                }
+            });
+
+            if (html === '') {
+                document.getElementById('mistakes-content').innerHTML = '<p>No mistakes!</p>';
+            } else {
+                document.getElementById('mistakes-content').innerHTML = html;
+            }
+        }
+
+        function loadUserNotifications() {
+            db.collection('notifications').where('active', '==', true).get().then(snap => {
+                const now = new Date();
+                let hasActive = false;
+                snap.forEach(doc => {
+                    const n = doc.data();
+                    const expiry = n.expiry.toDate ? n.expiry.toDate() : new Date(n.expiry);
+                    if (expiry > now) {
+                        hasActive = true;
+                        document.getElementById('notification-text').textContent = '🔔 ' + n.message;
+                        document.getElementById('notifications-bar').style.display = 'block';
+                    }
+                });
+                if (!hasActive) {
+                    document.getElementById('notifications-bar').style.display = 'none';
+                }
+            });
+        }
+
+        function closeNotification() {
+            document.getElementById('notifications-bar').style.display = 'none';
         }
 
         function loadHistory() {
