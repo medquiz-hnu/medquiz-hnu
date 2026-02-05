@@ -6,7 +6,8 @@
     <title>Admin - MedQuiz HNU</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
@@ -58,6 +59,9 @@
         .empty-state { text-align: center; padding: 50px; color: #666; }
         .login-screen { max-width: 500px; margin: 100px auto; }
         #upload-progress { margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; display: none; }
+        .drive-btn { background: #4285f4; color: white; padding: 15px 30px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.1em; margin: 10px 0; }
+        .drive-btn:hover { background: #3367d6; }
+        .link-input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em; margin: 10px 0; }
     </style>
 <base target="_blank">
 <base target="_blank">
@@ -102,7 +106,7 @@
             <div class="action-buttons">
                 <button class="btn btn-primary" onclick="openModal('folder-modal')">📁 New Folder</button>
                 <button class="btn btn-success" onclick="openModal('quiz-modal')">📝 New Quiz</button>
-                <button class="btn btn-warning" onclick="openCloudinaryUpload()">📎 Upload File</button>
+                <button class="btn btn-warning" onclick="openModal('file-modal')">📎 Add File Link</button>
             </div>
             <div id="content-area"></div>
         </div>
@@ -152,6 +156,42 @@
         </div>
     </div>
 
+    <!-- File Modal - Google Drive Link -->
+    <div id="file-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('file-modal')">&times;</button>
+            <h2>📎 Add File Link</h2>
+            <p style="color: #666;">Location: <span id="file-loc">Home</span></p>
+
+            <div style="background: #f0f4ff; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h4>How to add a file:</h4>
+                <ol style="text-align: left; margin: 10px 0;">
+                    <li>Upload your file to <strong>Google Drive</strong></li>
+                    <li>Right-click the file → <strong>Share</strong> → <strong>Copy link</strong></li>
+                    <li>Change access to <strong>"Anyone with the link"</strong></li>
+                    <li>Paste the link below</li>
+                </ol>
+            </div>
+
+            <div class="form-group">
+                <label>File Name</label>
+                <input type="text" id="file-name" placeholder="e.g., Physiology Notes.pdf" class="link-input">
+            </div>
+
+            <div class="form-group">
+                <label>Google Drive Link</label>
+                <input type="text" id="file-url" placeholder="https://drive.google.com/file/d/..." class="link-input">
+            </div>
+
+            <div class="form-group">
+                <label>File Size (KB) - Optional</label>
+                <input type="number" id="file-size" placeholder="e.g., 1024" class="link-input">
+            </div>
+
+            <button class="btn btn-success" onclick="saveFileLink()">💾 Save File</button>
+        </div>
+    </div>
+
     <!-- Edit Folder Modal -->
     <div id="edit-folder-modal" class="modal">
         <div class="modal-content">
@@ -192,13 +232,8 @@
         let editingQuizId = null;
         let editingFolderId = null;
 
-        // Cloudinary Configuration
-        const CLOUDINARY_CLOUD_NAME = 'dtr331m22';
-        const CLOUDINARY_UPLOAD_PRESET = 'medquiz_unsigned';
-
         window.onload = function() {
             console.log('Admin page loaded');
-            console.log('Firebase initialized:', firebase.apps.length > 0);
             if (localStorage.getItem('admin_logged_in') === 'true') showPanel();
         };
 
@@ -275,7 +310,7 @@
                     hasContent = true;
                     const f = doc.data();
                     const icon = f.name.endsWith('.pdf') ? '📄' : f.name.endsWith('.ppt') ? '📊' : '📝';
-                    html += `<div class="file-card"><button class="delete-btn" onclick="event.stopPropagation(); deleteFile('${doc.id}', '${f.publicId || ''}')">🗑️</button><div class="folder-icon">${icon}</div><div class="folder-name">${f.name}</div><div style="color: #666; font-size: 0.9em;">${(f.size/1024).toFixed(1)} KB</div></div>`;
+                    html += `<div class="file-card"><button class="delete-btn" onclick="event.stopPropagation(); deleteFile('${doc.id}')">🗑️</button><div class="folder-icon">${icon}</div><div class="folder-name">${f.name}</div><div style="color: #666; font-size: 0.9em;">${f.size ? (f.size/1024).toFixed(1) + ' KB' : 'Google Drive'}</div></div>`;
                 });
 
                 if (!hasContent) html += '<div class="empty-state" style="grid-column: 1/-1;"><h3>Empty</h3><p>Add folders, quizzes, or files</p></div>';
@@ -295,6 +330,7 @@
             const loc = currentPath.length > 0 ? currentPath[currentPath.length - 1].name : 'Home';
             document.getElementById('folder-loc').textContent = loc;
             document.getElementById('quiz-loc').textContent = loc;
+            document.getElementById('file-loc').textContent = loc;
         }
 
         function navigateTo(index) {
@@ -339,7 +375,7 @@
                 snap.forEach(d => deleteQuiz(d.id));
             });
             db.collection('files').where('folderId', '==', id).get().then(snap => {
-                snap.forEach(d => deleteFile(d.id, d.data().publicId));
+                snap.forEach(d => deleteFile(d.id));
             });
             db.collection('folders').doc(id).delete();
             setTimeout(() => {
@@ -348,6 +384,60 @@
             }, 500);
         }
 
+        // GOOGLE DRIVE FILE LINK
+        function saveFileLink() {
+            const name = document.getElementById('file-name').value.trim();
+            const url = document.getElementById('file-url').value.trim();
+            const size = parseInt(document.getElementById('file-size').value) || 0;
+
+            if (!name) return alert('Enter file name');
+            if (!url) return alert('Enter Google Drive link');
+
+            // Convert Google Drive link to direct download/view link
+            let directUrl = url;
+
+            // Handle different Google Drive link formats
+            const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (fileIdMatch) {
+                const fileId = fileIdMatch[1];
+                directUrl = `https://drive.google.com/file/d/${fileId}/view`;
+            }
+
+            const folderId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
+
+            const fileData = {
+                name: name,
+                type: 'application/pdf',
+                size: size,
+                url: directUrl,
+                originalUrl: url,
+                folderId: folderId,
+                uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            db.collection('files').add(fileData).then(() => {
+                closeModal('file-modal');
+                document.getElementById('file-name').value = '';
+                document.getElementById('file-url').value = '';
+                document.getElementById('file-size').value = '';
+                loadFolderContent(folderId);
+                loadStats();
+                alert('File link saved!');
+            }).catch(err => {
+                alert('Error: ' + err.message);
+            });
+        }
+
+        function deleteFile(id) {
+            if (!confirm('Delete file?')) return;
+            db.collection('files').doc(id).delete().then(() => {
+                const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
+                loadFolderContent(parentId);
+                loadStats();
+            });
+        }
+
+        // Quiz functions (same as before)
         function parseQuiz() {
             const text = document.getElementById('quiz-text').value;
             if (!text.trim()) return alert('Enter questions');
@@ -462,71 +552,6 @@
                 snap.forEach(d => batch.delete(d.ref));
                 return batch.commit();
             }).then(() => db.collection('quizzes').doc(id).delete()).then(() => {
-                const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
-                loadFolderContent(parentId);
-                loadStats();
-            });
-        }
-
-        // CLOUDINARY FILE UPLOAD
-        function openCloudinaryUpload() {
-            const folderId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
-
-            // Check if cloudinary is loaded
-            if (typeof cloudinary === 'undefined') {
-                alert('Cloudinary widget not loaded. Please refresh the page.');
-                return;
-            }
-
-            const widget = cloudinary.createUploadWidget({
-                cloudName: CLOUDINARY_CLOUD_NAME,
-                uploadPreset: CLOUDINARY_UPLOAD_PRESET,
-                sources: ['local', 'url'],
-                multiple: false,
-                maxFiles: 1,
-                resourceType: 'raw',
-                clientAllowedFormats: ['pdf', 'ppt', 'pptx', 'doc', 'docx', 'txt'],
-                maxFileSize: 10000000,
-                showPoweredBy: false,
-                language: 'en'
-            }, (error, result) => {
-                if (error) {
-                    console.error('Cloudinary upload error:', error);
-                    alert('Upload failed: ' + (error.message || error.statusText || 'Unknown error'));
-                    return;
-                }
-
-                if (result && result.event === 'success') {
-                    console.log('Upload successful:', result.info);
-
-                    const fileData = {
-                        name: result.info.original_filename + (result.info.format ? '.' + result.info.format : ''),
-                        type: result.info.resource_type + '/' + (result.info.format || 'unknown'),
-                        size: result.info.bytes,
-                        url: result.info.secure_url,
-                        publicId: result.info.public_id,
-                        folderId: folderId,
-                        uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-
-                    db.collection('files').add(fileData).then((docRef) => {
-                        console.log('File saved to Firestore:', docRef.id);
-                        loadFolderContent(folderId);
-                        loadStats();
-                        alert('File uploaded successfully!');
-                    }).catch(err => {
-                        console.error('Error saving to Firestore:', err);
-                        alert('Error saving file info: ' + err.message);
-                    });
-                }
-            });
-
-            widget.open();
-        }
-
-        function deleteFile(id, publicId) {
-            if (!confirm('Delete file?')) return;
-            db.collection('files').doc(id).delete().then(() => {
                 const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
                 loadFolderContent(parentId);
                 loadStats();
